@@ -407,6 +407,22 @@ function aiTurnRest() {
 }
 
 let canvas, ctx;
+const IMGS = {};
+function loadImages(done) {
+  const files = {
+    hout: "img/hout.jpg", steen: "img/steen.jpg", graan: "img/graan.jpg",
+    wol: "img/wol.jpg", erts: "img/erts.jpg", woestijn: "img/woestijn.jpg",
+    tafel: "img/tafel.jpg", huis: "img/huis.jpg", stad: "img/stad.jpg", zwerver: "img/zwerver.jpg",
+  };
+  let left = Object.keys(files).length;
+  Object.entries(files).forEach(([k, src]) => {
+    const im = new Image();
+    im.onload = () => { if (--left === 0) done(); };
+    im.onerror = () => { if (--left === 0) done(); };
+    im.src = src;
+    IMGS[k] = im;
+  });
+}
 function layoutGraph() {
   GRAPH = buildGraph(G.hexes, SIZE);
 }
@@ -416,6 +432,7 @@ function draw() {
   ctx = canvas.getContext("2d");
   const W = canvas.width, H = canvas.height;
   ctx.clearRect(0, 0, W, H);
+  if (IMGS.tafel && IMGS.tafel.complete) ctx.drawImage(IMGS.tafel, 0, 0, W, H);
   ctx.save();
   ctx.translate(W / 2, H / 2 + 8);
   G.hexes.forEach((h) => drawHex(h));
@@ -434,14 +451,13 @@ function draw() {
     const owner = G.players.find((p) => p.spots.some((s) => s.v === v.id));
     if (!owner) return;
     const city = owner.spots.find((s) => s.v === v.id).city;
-    ctx.fillStyle = owner.color;
     ctx.beginPath();
-    if (city) ctx.rect(v.x - 8, v.y - 8, 16, 16);
-    else ctx.arc(v.x, v.y, 7, 0, Math.PI * 2);
+    ctx.arc(v.x, v.y + 4, city ? 12 : 9, 0, Math.PI * 2);
+    ctx.fillStyle = owner.color;
     ctx.fill();
-    ctx.strokeStyle = "#1a1410";
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    const piece = city ? IMGS.stad : IMGS.huis;
+    const s = city ? 28 : 22;
+    if (piece && piece.complete) ctx.drawImage(piece, v.x - s / 2, v.y - s + 4, s, s);
   });
   ctx.restore();
 }
@@ -456,16 +472,35 @@ function drawHex(h) {
     if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   }
   ctx.closePath();
-  ctx.fillStyle = RES_COLOR[h.type];
-  ctx.fill();
-  ctx.strokeStyle = "#1a1410";
-  ctx.lineWidth = 2;
+  ctx.save();
+  ctx.clip();
+  const tile = IMGS[h.type];
+  if (tile && tile.complete) {
+    ctx.drawImage(tile, c.x - SIZE, c.y - SIZE, SIZE * 2, SIZE * 2);
+  } else {
+    ctx.fillStyle = RES_COLOR[h.type];
+    ctx.fill();
+  }
+  ctx.restore();
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const a = (Math.PI / 180) * (60 * i - 30);
+    const x = c.x + SIZE * Math.cos(a);
+    const y = c.y + SIZE * Math.sin(a);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.strokeStyle = "#3a2a18";
+  ctx.lineWidth = 2.5;
   ctx.stroke();
   if (G.robber.q === h.q && G.robber.r === h.r) {
-    ctx.fillStyle = "#111";
-    ctx.beginPath();
-    ctx.arc(c.x, c.y + 14, 8, 0, Math.PI * 2);
-    ctx.fill();
+    if (IMGS.zwerver && IMGS.zwerver.complete) ctx.drawImage(IMGS.zwerver, c.x - 12, c.y + 2, 24, 36);
+    else {
+      ctx.fillStyle = "#111";
+      ctx.beginPath();
+      ctx.arc(c.x, c.y + 14, 8, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
   if (h.number) {
     ctx.fillStyle = "#f3e6c8";
@@ -577,5 +612,6 @@ window.addEventListener("load", () => {
   canvas = document.getElementById("board");
   canvas.addEventListener("click", onClick);
   layoutGraph();
+  loadImages(() => renderAll());
   renderAll();
 });
