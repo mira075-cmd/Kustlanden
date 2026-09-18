@@ -7,7 +7,7 @@
   <title>Kustlanden</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon.svg" />
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/style.css?v=2" />
 </head>
 <body>
   <div id="app">
@@ -78,6 +78,21 @@
       <button class="pill primary" onclick="hideHelp()">Spelen</button>
     </div>
   </div>
-  <script src="js/game.js"></script>
+  
+<div id="lobby" class="show">
+  <div class="box">
+    <h2>Nieuwe partij</h2>
+    <p style="color:#b8a58a;margin:0 0 10px">Kies kaart, aantal spelers en wie mens of AI is.</p>
+    <label>Spelers
+      <select id="cfgCount" class="pill" onchange="syncLobby()">
+        <option>2</option><option>3</option><option selected>4</option>
+      </select>
+    </label>
+    <div id="cfgSeats"></div>
+    <div class="maps" id="cfgMaps"></div>
+    <button class="pill primary" onclick="startFromLobby()">Start</button>
+  </div>
+</div>
+<script src="js/game.js?v=2"></script>
 </body>
 </html>
