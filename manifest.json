@@ -1,0 +1,13 @@
+{
+  "name": "Kustlanden",
+  "short_name": "Kustlanden",
+  "description": "Hex-bordspel: bouw, handel, verzamel grondstoffen.",
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a1410",
+  "theme_color": "#c4a574",
+  "icons": [
+    { "src": "icon.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
