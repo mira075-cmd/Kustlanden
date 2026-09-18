@@ -20,6 +20,19 @@ header {
 }
 header h1 { margin: 0; font-size: 1.15rem; letter-spacing: .04em; color: var(--gold); }
 header .sub { color: var(--muted); font-size: .8rem; }
+#turnBar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px; font-weight: 700; background: #2a1c14;
+  border-bottom: 1px solid var(--line);
+}
+#turnBar .dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #f3e6c8; }
+#players { padding: 6px 12px 0; }
+.seat {
+  display: flex; align-items: center; gap: 6px;
+  border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; font-size: .8rem;
+}
+.seat.on { outline: 2px solid var(--gold); background: #2e2418; }
+.seat .sw { width: 10px; height: 10px; border-radius: 50%; }
 #boardWrap { flex: 1; display: flex; justify-content: center; align-items: center; padding: 8px; }
 canvas { max-width: 100%; height: auto; touch-action: manipulation; background: #152018; border-radius: 12px; }
 #dock {
