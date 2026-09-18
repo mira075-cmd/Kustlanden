@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#c4a574" />
+  <meta name="theme-color" content="#e0b56a" />
   <title>Kustlanden</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon.svg" />
@@ -14,18 +14,29 @@
     <header>
       <div>
         <h1>Kustlanden</h1>
-        <div class="sub" id="hint">Laden…</div>
+        <div class="sub">Bouw · handel · 10 punten</div>
       </div>
       <div class="row">
         <button class="pill" onclick="showHelp()">Regels</button>
         <button class="pill" onclick="restart()">Nieuw</button>
       </div>
     </header>
+    <div id="turnBar">
+      <span class="dot" id="turnDot"></span>
+      <div>
+        <b id="status">Laden…</b>
+        <small id="hint">Even geduld</small>
+      </div>
+      <div id="steps">
+        <span class="step" id="s1">1 Dobbel</span>
+        <span class="step" id="s2">2 Bouw</span>
+        <span class="step" id="s3">3 Klaar</span>
+      </div>
+    </div>
+    <div id="players"></div>
     <div id="boardWrap">
       <canvas id="board" width="720" height="640"></canvas>
     </div>
-    <div id="turnBar"><span class="dot" id="turnDot"></span><span id="status">Laden…</span></div>
-    <div id="players" class="row"></div>
     <div id="dock">
       <div class="row" id="res"></div>
       <div class="row" id="modes">
@@ -53,19 +64,18 @@
         </select>
         <button class="pill" onclick="tradePrompt()">Bank 4:1</button>
       </div>
+      <div class="costs">Pad: hout+steen · Huis: hout+steen+graan+wol · Stad: 2 graan + 3 erts</div>
       <div id="log"></div>
     </div>
   </div>
   <div id="modal" onclick="if(event.target.id==='modal')hideHelp()">
     <div class="box">
       <h2>Kustlanden</h2>
-      <p>Eigen hex-spel in dezelfde familie als klassieke nederzettingsspellen. Geen officiële editie, naam of kunst.</p>
-      <p><b>Doel:</b> 10 overwinningspunten. Nederzetting 1, stad 2.</p>
-      <p><b>Start:</b> Iedereen plaatst 2 nederzettingen + 2 paden (laatste ronde levert meteen grondstoffen).</p>
-      <p><b>Beurt:</b> dobbel → bouw. 7 verplaatst de zwerver (geen opbrengst op die tegel). Bank 4:1.</p>
-      <p><b>Kosten:</b> pad hout+steen · nederzetting hout+steen+graan+wol · stad 2 graan + 3 erts.</p>
-      <p>Tik een hoekpunt voor een nederzetting/stad, een rand voor een pad, een tegel om de zwerver te zetten.</p>
-      <button class="pill primary" onclick="hideHelp()">Sluiten</button>
+      <p>Eigen hex-spel. Geen officiële editie of kunst van een ander merk.</p>
+      <p><b>Doel:</b> 10 punten. Huis 1, stad 2.</p>
+      <p><b>Beurt:</b> dobbel → bouw op de lichtende plekken → einde beurt.</p>
+      <p><b>7:</b> te veel kaarten weg, verplaats de zwerver.</p>
+      <button class="pill primary" onclick="hideHelp()">Spelen</button>
     </div>
   </div>
   <script src="js/game.js"></script>
