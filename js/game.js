@@ -262,18 +262,20 @@ function endTurn() {
 
 function setupPlaceSettlement(vId) {
   const p = current();
-  if (!vertexFree(vId)) return;
+  if (!vertexFree(vId)) return false;
   p.spots.push({ v: vId, city: false });
   if (G.setupStep >= 4) {
     const v = GRAPH.verts.get(vId);
-    v.hexes.forEach((hh) => {
+    if (v) v.hexes.forEach((hh) => {
       const h = G.hexes.find((x) => x.q === hh.q && x.r === hh.r);
       if (h && h.type !== "woestijn") give(p, h.type, 1);
     });
   }
   G.phase = "setup-road";
-  log(p.name + " plaatst een nederzetting.");
+  log(p.name + " zet een huis.");
   renderAll();
+  scheduleSetup();
+  return true;
 }
 
 function setupPlaceRoad(e) {
@@ -293,7 +295,7 @@ function setupPlaceRoad(e) {
     log("Beurt opstelling: " + current().name);
   }
   renderAll();
-  if (G.phase !== "main" && !current().human) setTimeout(aiSetup, 400);
+  scheduleSetup();
 }
 
 function buildSettlement(vId) {
@@ -360,18 +362,28 @@ function score() {
   }
 }
 
+function scheduleSetup() {
+  if (G.phase === "main" || G.winner) return;
+  if (current().human) return;
+  clearTimeout(window._aiT);
+  window._aiT = setTimeout(aiSetup, 550);
+}
 function aiSetup() {
   const p = current();
+  if (p.human || G.phase === "main") return;
   if (G.phase === "setup") {
     const opts = [...GRAPH.verts.values()].filter((v) => vertexFree(v.id));
     opts.sort((a, b) => pipValue(b) - pipValue(a));
+    if (!opts.length) { log("Geen vrije plek voor " + p.name); return; }
     setupPlaceSettlement(opts[0].id);
     return;
   }
   if (G.phase === "setup-road") {
     const last = p.spots[p.spots.length - 1];
-    const e = [...GRAPH.edges.values()].find((x) => canBuildRoad(p, x) && (x.a === last.v || x.b === last.v));
+    if (!last) { log(p.name + " heeft nog geen huis."); return; }
+    let e = [...GRAPH.edges.values()].find((x) => canBuildRoad(p, x));
     if (e) setupPlaceRoad(e);
+    else log(p.name + " vindt geen pad.");
   }
 }
 
