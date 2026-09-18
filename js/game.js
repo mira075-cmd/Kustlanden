@@ -161,9 +161,13 @@ function stateNew(cfg) {
     human: !!s.human,
     res: emptyBag(),
     roads: [],
+    ships: [],
     spots: [],
     vp: 0,
     knights: 0,
+    army: 0,
+    dev: [],
+    newDev: [],
   }));
   return {
     hexes,
@@ -176,7 +180,19 @@ function stateNew(cfg) {
     log: ["Nieuwe partij op " + (MAPS[cfg.map]||MAPS.kernland).title + ". Eerste huis zetten."],
     winner: null,
     mapId: cfg.map,
+    deck: newDeck(),
+    armyOwner: null,
+    roadOwner: null,
+    freeBuilds: 0,
+    pendingDev: null,
   };
+}
+function newDeck() {
+  const d = [];
+  for (let i = 0; i < 14; i++) d.push("ridder");
+  for (let i = 0; i < 5; i++) d.push("punt");
+  d.push("stratenbouw", "stratenbouw", "uitvinding", "uitvinding", "monopolie", "monopolie");
+  return shuffle(d);
 }
 
 const SIZE = 42;
@@ -228,11 +244,23 @@ function adjacentVertices(id) {
 
 function playerTouchesVertex(p, id) {
   if (p.spots.some((s) => s.v === id)) return true;
-  return p.roads.some((r) => r.a === id || r.b === id);
+  if (p.roads.some((r) => r.a === id || r.b === id)) return true;
+  return (p.ships || []).some((r) => r.a === id || r.b === id);
 }
 
 function roadTaken(e) {
-  return G.players.some((o) => o.roads.some((r) => r.id === e.id));
+  return G.players.some((o) =>
+    o.roads.some((r) => r.id === e.id) || (o.ships || []).some((r) => r.id === e.id)
+  );
+}
+function edgeTouchesSea(e) {
+  const a = GRAPH.verts.get(e.a), b = GRAPH.verts.get(e.b);
+  if (!a || !b) return false;
+  const shared = a.hexes.filter((h) => b.hexes.some((x) => x.q === h.q && x.r === h.r));
+  return shared.some((ref) => {
+    const h = G.hexes.find((x) => x.q === ref.q && x.r === ref.r);
+    return h && h.type === "zee";
+  });
 }
 function canBuildRoad(p, e) {
   if (roadTaken(e) || !edgeOnLand(e)) return false;
@@ -245,7 +273,12 @@ function canBuildRoad(p, e) {
 function canBuildHouse(p, id) {
   if (!vertexFree(id)) return false;
   if (G.phase === "setup") return true;
-  return p.roads.some((r) => r.a === id || r.b === id);
+  return playerTouchesVertex(p, id);
+}
+function canBuildShip(p, e) {
+  if (roadTaken(e) || !edgeTouchesSea(e)) return false;
+  if (G.phase !== "main") return false;
+  return playerTouchesVertex(p, e.a) || playerTouchesVertex(p, e.b);
 }
 function canBuildCity(p, id) {
   return !!p.spots.find((s) => s.v === id && !s.city);
@@ -314,6 +347,9 @@ function endTurn() {
   if (G.winner) return;
   if (G.phase === "main" && current().human && !G.rolled) return;
   G.rolled = false;
+  G.freeBuilds = 0; current().playedDev = false;
+  G.pendingDev = null;
+  current().newDev = [];
   G.turn = (G.turn + 1) % G.players.length;
   G.phase = "main";
   log("Beurt: " + current().name);
@@ -387,10 +423,23 @@ function buildRoad(e) {
   const p = current();
   if (G.phase !== "main" || !G.rolled) return;
   if (!canBuildRoad(p, e)) return;
-  if (!pay(p, { hout: 1, steen: 1 })) return;
+  if (G.freeBuilds > 0) G.freeBuilds--;
+  else if (!pay(p, { hout: 1, steen: 1 })) return;
   p.roads.push({ id: e.id, a: e.a, b: e.b });
   score();
   log(p.name + " bouwt een pad.");
+  renderAll();
+}
+function buildShip(e) {
+  const p = current();
+  if (G.phase !== "main" || !G.rolled) return;
+  if (!canBuildShip(p, e)) return;
+  if (G.freeBuilds > 0) G.freeBuilds--;
+  else if (!pay(p, { hout: 1, wol: 1 })) return;
+  p.ships = p.ships || [];
+  p.ships.push({ id: e.id, a: e.a, b: e.b });
+  score();
+  log(p.name + " legt een boot (hout+wol).");
   renderAll();
 }
 
@@ -414,10 +463,12 @@ function moveRobber(h) {
 
 function score() {
   G.players.forEach((p) => {
-    p.vp = p.spots.reduce((n, s) => n + (s.city ? 2 : 1), 0);
+    const hidden = (p.dev || []).filter((c) => c === "punt").length;
+    p.vp = p.spots.reduce((n, s) => n + (s.city ? 2 : 1), 0) + hidden;
+    if (G.armyOwner === p.id) p.vp += 2;
   });
   const best = G.players.slice().sort((a, b) => b.vp - a.vp)[0];
-  if (best.vp >= 10) {
+  if (best && best.vp >= 10) {
     G.winner = best;
     G.phase = "over";
     log(best.name + " wint met " + best.vp + " punten.");
@@ -531,6 +582,17 @@ function draw() {
     ctx.lineTo(b.x, b.y);
     ctx.stroke();
   });
+  G.players.forEach((pl) => {
+    (pl.ships || []).forEach((s) => {
+      const a = GRAPH.verts.get(s.a), b = GRAPH.verts.get(s.b);
+      if (!a || !b) return;
+      ctx.strokeStyle = pl.color;
+      ctx.lineWidth = 5;
+      ctx.setLineDash([7, 5]);
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      ctx.setLineDash([]);
+    });
+  });
   GRAPH.verts.forEach((v) => {
     const owner = G.players.find((p) => p.spots.some((s) => s.v === v.id));
     if (!owner) return;
@@ -557,6 +619,9 @@ function wantHouse() {
 function wantRoad() {
   return G.phase === "setup-road" || (G.phase === "main" && G.rolled && (MODE === "road" || MODE === "auto"));
 }
+function wantShip() {
+  return G.phase === "main" && G.rolled && (MODE === "ship" || MODE === "auto");
+}
 function drawGuides() {
   if (!GRAPH || G.winner) return;
   const p = current();
@@ -571,6 +636,17 @@ function drawGuides() {
       ctx.fill();
     });
     return;
+  }
+  if (wantShip()) {
+    GRAPH.edges.forEach((e) => {
+      if (!canBuildShip(p, e)) return;
+      const a = GRAPH.verts.get(e.a), b = GRAPH.verts.get(e.b);
+      ctx.strokeStyle = "rgba(120,190,230,.7)";
+      ctx.lineWidth = 4;
+      ctx.setLineDash([3, 5]);
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      ctx.setLineDash([]);
+    });
   }
   if (wantRoad()) {
     GRAPH.edges.forEach((e) => {
@@ -745,15 +821,83 @@ function onClick(ev) {
       if ((MODE === "city" || MODE === "auto") && canBuildCity(p, hitp.v.id)) return buildCity(hitp.v.id);
       if ((MODE === "house" || MODE === "auto") && canBuildHouse(p, hitp.v.id)) return buildSettlement(hitp.v.id);
     }
+    if (hitp.e && (MODE === "ship" || MODE === "auto") && canBuildShip(p, hitp.e)) return buildShip(hitp.e);
     if (hitp.e && (MODE === "road" || MODE === "auto") && canBuildRoad(p, hitp.e)) return buildRoad(hitp.e);
   }
 }
 function setMode(m) {
   MODE = m;
-  ["auto","road","house","city"].forEach((k) => {
+  ["auto","road","house","city","ship"].forEach((k) => {
     const el = document.getElementById("mode" + k[0].toUpperCase() + k.slice(1));
     if (el) el.classList.toggle("primary", MODE === k);
   });
+}
+
+
+const DEV_LABEL = {
+  ridder: "Ridder",
+  punt: "Overwinningspunt",
+  stratenbouw: "Stratenbouw",
+  uitvinding: "Uitvinding",
+  monopolie: "Monopolie",
+};
+function buyDev() {
+  const p = current();
+  if (!p.human || G.phase !== "main" || !G.rolled) return;
+  if (!G.deck.length) { log("Geen kaarten meer."); return; }
+  if (!pay(p, { wol: 1, graan: 1, erts: 1 })) { log("Kaart kost wol+graan+erts."); renderAll(); return; }
+  const card = G.deck.pop();
+  p.dev.push(card);
+  p.newDev.push(card);
+  log(p.name + " koopt een ontwikkelkaart.");
+  score();
+  renderAll();
+}
+function playDev(i) {
+  const p = current();
+  if (!p.human || G.phase !== "main") return;
+  const card = p.dev[i];
+  if (!card || card === "punt") return;
+  if (p.newDev.includes(card) && p.newDev.filter((c)=>c===card).length >= p.dev.filter((c)=>c===card).length) {
+    log("Die kaart is deze beurt gekocht.");
+    return;
+  }
+  if (p.playedDev) { log("Al een kaart gespeeld."); return; }
+  p.dev.splice(i, 1);
+  p.playedDev = true;
+  if (card === "ridder") {
+    p.army += 1;
+    const lead = G.players.slice().sort((a,b)=>b.army-a.army)[0];
+    if (lead.army >= 3 && (G.armyOwner == null || G.players[G.armyOwner].army < lead.army)) {
+      G.armyOwner = lead.id;
+      log(lead.name + " heeft de grootste ridderwacht.");
+    }
+    G.phase = "robber";
+    log("Ridder: verplaats de zwerver.");
+  } else if (card === "stratenbouw") {
+    G.freeBuilds = 2;
+    log("Stratenbouw: zet 2 paden of boten gratis.");
+  } else if (card === "uitvinding") {
+    const a = prompt("Uitvinding: eerste grondstof (hout/steen/graan/wol/erts)", "hout");
+    const b = prompt("Tweede grondstof", "graan");
+    if (RES.includes(a)) give(p, a, 1);
+    if (RES.includes(b)) give(p, b, 1);
+    log("Uitvinding: 2 grondstoffen.");
+  } else if (card === "monopolie") {
+    const k = prompt("Monopolie: welke grondstof?", "graan");
+    if (RES.includes(k)) {
+      let n = 0;
+      G.players.forEach((o) => {
+        if (o.id === p.id) return;
+        n += o.res[k] || 0;
+        o.res[k] = 0;
+      });
+      give(p, k, n);
+      log("Monopolie: +" + n + " " + k);
+    }
+  }
+  score();
+  renderAll();
 }
 
 function renderLog() {
@@ -795,7 +939,15 @@ function renderAll() {
   document.getElementById("players").innerHTML = G.players.map((x) =>
     `<div class="seat${x.id === p.id ? " on" : ""}"><div class="name"><span class="sw" style="background:${x.color}"></span>${x.name}</div><div class="meta">${x.vp} VP · ${x.human ? "jij" : "AI"}</div></div>`
   ).join("");
-  document.getElementById("roll").disabled = !(p.human && G.phase === "main" && !G.rolled);
+  const hand = document.getElementById("hand");
+  if (hand) {
+    const p = current();
+    if (!p.human) hand.innerHTML = "";
+    else hand.innerHTML = (p.dev||[]).map((c,i) =>
+      `<button class="pill" onclick="playDev(${i})">${DEV_LABEL[c]||c}${p.newDev&&p.newDev.includes(c)?" · nieuw":""}</button>`
+    ).join("") || '<span class="costs">Geen ontwikkelkaarten</span>';
+  }
+    document.getElementById("roll").disabled = !(p.human && G.phase === "main" && !G.rolled);
   document.getElementById("end").disabled = !(p.human && G.phase === "main" && G.rolled);
   renderLog();
 }
