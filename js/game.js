@@ -7,21 +7,54 @@ const RES_COLOR = {
   wol: "#7aa86a",
   erts: "#6b7380",
   woestijn: "#c2a36b",
+  zee: "#1d4f6e",
 };
-const PLAYERS = [
-  { id: 0, name: "Jij", color: "#c45c4a", human: true },
-  { id: 1, name: "Noor", color: "#4a7ec4", human: false },
-  { id: 2, name: "Bram", color: "#d4a017", human: false },
-  { id: 3, name: "Isa", color: "#5aa06a", human: false },
+const SEAT_PRESET = [
+  { name: "Rood", color: "#c45c4a" },
+  { name: "Blauw", color: "#4a7ec4" },
+  { name: "Goud", color: "#d4a017" },
+  { name: "Groen", color: "#5aa06a" },
 ];
-
-const HEX_LAYOUT = [
+const CORE19 = [
   [0, -2], [1, -2], [2, -2],
   [-1, -1], [0, -1], [1, -1], [2, -1],
   [-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0],
   [-2, 1], [-1, 1], [0, 1], [1, 1],
   [-2, 2], [-1, 2], [0, 2],
 ];
+function around(cells) {
+  const have = new Set(cells.map(([q,r]) => q + "," + r));
+  const extra = [];
+  cells.forEach(([q,r]) => {
+    [[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]].forEach(([dq,dr]) => {
+      const k = (q+dq) + "," + (r+dr);
+      if (!have.has(k)) { have.add(k); extra.push([q+dq, r+dr]); }
+    });
+  });
+  return extra;
+}
+const MAPS = {
+  kernland: { title: "Kernland", blurb: "Klassiek binnenland, 19 tegels.", land: CORE19, zee: [] },
+  ringzee: { title: "Ringzee", blurb: "Eiland met zee eromheen.", land: CORE19, zee: around(CORE19) },
+  tweestroom: {
+    title: "Twee kusten",
+    blurb: "Twee landmassa's met water ertussen.",
+    land: [[-3,-1],[-2,-1],[-3,0],[-2,0],[-2,1],[-1,0],[2,-1],[3,-1],[2,0],[3,0],[2,1],[3,1],[0,-2],[1,2]],
+    zee: [[0,-1],[1,-1],[0,0],[1,0],[0,1],[1,1],[-1,-1],[-1,1],[2,-2],[-2,-2]]
+  },
+  keten: {
+    title: "Lange kust",
+    blurb: "Smal eiland, veel kust.",
+    land: [[-3,0],[-2,0],[-1,0],[0,0],[1,0],[2,0],[3,0],[-2,-1],[0,-1],[2,-1],[-1,1],[1,1]],
+    zee: around([[-3,0],[-2,0],[-1,0],[0,0],[1,0],[2,0],[3,0],[-2,-1],[0,-1],[2,-1],[-1,1],[1,1]])
+  },
+};
+let CFG = { map: "kernland", seats: [
+  { name: "Rood", human: true },
+  { name: "Blauw", human: false },
+  { name: "Goud", human: false },
+  { name: "Groen", human: false },
+]};
 
 function hexKey(q, r) { return q + "," + r; }
 function hexToPixel(q, r, size) {
@@ -94,15 +127,21 @@ function shuffle(a) {
   return b;
 }
 
-function newBoard() {
-  const types = shuffle(["hout","hout","hout","hout","steen","steen","steen","graan","graan","graan","graan","wol","wol","wol","wol","erts","erts","erts","woestijn"]);
-  const nums = shuffle([2,3,3,4,4,5,5,6,6,8,8,9,9,10,10,11,11,12]);
+function newBoard(mapId) {
+  const map = MAPS[mapId] || MAPS.kernland;
+  const landN = map.land.length;
+  const bag = [];
+  const cycle = ["hout","steen","graan","wol","erts"];
+  for (let i = 0; i < landN; i++) bag.push(i === Math.floor(landN/2) ? "woestijn" : cycle[i % cycle.length]);
+  const types = shuffle(bag);
+  const nums = shuffle([2,3,3,4,4,5,5,6,6,8,8,9,9,10,10,11,11,12,3,4,5,9,10,11]);
   let ni = 0;
-  const hexes = HEX_LAYOUT.map(([q, r], i) => {
+  const hexes = map.land.map(([q,r], i) => {
     const type = types[i];
     const number = type === "woestijn" ? 0 : nums[ni++];
     return { q, r, type, number };
   });
+  map.zee.forEach(([q,r]) => hexes.push({ q, r, type: "zee", number: 0 }));
   return hexes;
 }
 
@@ -110,26 +149,33 @@ function emptyBag() {
   return { hout: 0, steen: 0, graan: 0, wol: 0, erts: 0 };
 }
 
-function stateNew() {
-  const hexes = newBoard();
-  const robber = hexes.find((h) => h.type === "woestijn");
+function stateNew(cfg) {
+  cfg = cfg || CFG;
+  const hexes = newBoard(cfg.map);
+  const robber = hexes.find((h) => h.type === "woestijn") || hexes.find((h) => h.type !== "zee") || hexes[0];
+  const n = cfg.seats.length;
+  const players = cfg.seats.map((s, i) => ({
+    id: i,
+    name: s.name || SEAT_PRESET[i].name,
+    color: SEAT_PRESET[i].color,
+    human: !!s.human,
+    res: emptyBag(),
+    roads: [],
+    spots: [],
+    vp: 0,
+    knights: 0,
+  }));
   return {
     hexes,
     robber: { q: robber.q, r: robber.r },
-    players: PLAYERS.map((p) => ({
-      ...p,
-      res: emptyBag(),
-      roads: [],
-      spots: [],
-      vp: 0,
-      knights: 0,
-    })),
+    players,
     turn: 0,
     phase: "setup",
     setupStep: 0,
     lastDice: null,
-    log: ["Nieuwe partij. Plaats je eerste nederzetting."],
+    log: ["Nieuwe partij op " + (MAPS[cfg.map]||MAPS.kernland).title + ". Eerste huis zetten."],
     winner: null,
+    mapId: cfg.map,
   };
 }
 
@@ -146,7 +192,7 @@ function log(msg) {
   renderLog();
 }
 
-function current() { return G.players[G.turn % 4]; }
+function current() { return G.players[G.turn % G.players.length]; }
 
 function vertexFree(id) {
   const used = new Set();
@@ -202,7 +248,7 @@ function produce(roll) {
   G.hexes.forEach((h) => {
     if (h.number !== roll) return;
     if (G.robber.q === h.q && G.robber.r === h.r) return;
-    if (h.type === "woestijn") return;
+    if (h.type === "woestijn" || h.type === "zee") return;
     G.players.forEach((p) => {
       p.spots.forEach((s) => {
         const v = GRAPH.verts.get(s.v);
@@ -253,7 +299,7 @@ function endTurn() {
   if (G.winner) return;
   if (G.phase === "main" && current().human && !G.rolled) return;
   G.rolled = false;
-  G.turn = (G.turn + 1) % 4;
+  G.turn = (G.turn + 1) % G.players.length;
   G.phase = "main";
   log("Beurt: " + current().name);
   renderAll();
@@ -283,8 +329,9 @@ function setupPlaceRoad(e) {
   if (!canBuildRoad(p, e)) return;
   p.roads.push({ id: e.id, a: e.a, b: e.b });
   G.setupStep += 1;
-  const order = [0, 1, 2, 3, 3, 2, 1, 0];
-  if (G.setupStep >= 8) {
+  const n = G.players.length;
+  const order = [...Array(n).keys(), ...[...Array(n).keys()].reverse()];
+  if (G.setupStep >= order.length) {
     G.phase = "main";
     G.turn = 0;
     G.rolled = false;
@@ -710,7 +757,7 @@ function hintText() {
 const RES_DOT = { hout:"#2f6b3a", steen:"#8a5a3b", graan:"#d4b43a", wol:"#7aa86a", erts:"#6b7380" };
 function renderAll() {
   draw();
-  const me = G.players[0];
+  const me = current();
   const p = current();
   document.getElementById("res").innerHTML = RES.map((k) =>
     `<span class="res"><span class="ic" style="background:${RES_DOT[k]}"></span>${k}<b>${me.res[k]}</b></span>`
@@ -746,10 +793,36 @@ function hideHelp() {
 }
 
 function restart() {
-  G = stateNew();
+  document.getElementById("lobby").classList.add("show");
+  syncLobby();
+}
+function applyGame() {
+  G = stateNew(CFG);
   layoutGraph();
   renderAll();
-  if (!current().human) setTimeout(aiSetup, 300);
+  scheduleSetup();
+}
+function syncLobby() {
+  const n = parseInt(document.getElementById("cfgCount").value, 10);
+  const box = document.getElementById("cfgSeats");
+  if (!CFG.seats) CFG.seats = [];
+  while (CFG.seats.length < n) CFG.seats.push({ name: SEAT_PRESET[CFG.seats.length].name, human: false });
+  CFG.seats = CFG.seats.slice(0, n);
+  box.innerHTML = CFG.seats.map((s,i) => `<div class="seatrow">
+    <span class="sw" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${SEAT_PRESET[i].color}"></span>
+    <input class="pill" value="${s.name}" onchange="CFG.seats[${i}].name=this.value" />
+    <select class="pill" onchange="CFG.seats[${i}].human=this.value==='mens'">
+      <option value="mens"${s.human?" selected":""}>Mens</option>
+      <option value="ai"${s.human?"":" selected"}>AI</option>
+    </select>
+  </div>`).join("");
+  document.getElementById("cfgMaps").innerHTML = Object.entries(MAPS).map(([id,m]) =>
+    `<button class="mapcard${CFG.map===id?" on":""}" onclick="CFG.map='${id}';syncLobby()"><b>${m.title}</b><small>${m.blurb}</small></button>`
+  ).join("");
+}
+function startFromLobby() {
+  document.getElementById("lobby").classList.remove("show");
+  applyGame();
 }
 
 function tradePrompt() {
@@ -767,4 +840,5 @@ window.addEventListener("load", () => {
   loadImages(() => renderAll());
   setMode("auto");
   renderAll();
+  syncLobby();
 });
