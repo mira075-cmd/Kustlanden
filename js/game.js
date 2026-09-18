@@ -137,6 +137,8 @@ const SIZE = 42;
 let G = stateNew();
 let GRAPH = null;
 let selected = null;
+let HOVER = { v: null, e: null, h: null };
+let MODE = "auto";
 
 function log(msg) {
   G.log.unshift(msg);
@@ -168,17 +170,24 @@ function playerTouchesVertex(p, id) {
   return p.roads.some((r) => r.a === id || r.b === id);
 }
 
+function roadTaken(e) {
+  return G.players.some((o) => o.roads.some((r) => r.id === e.id));
+}
 function canBuildRoad(p, e) {
-  if (p.roads.some((r) => r.id === e.id)) return false;
-  if (G.players.some((o) => o.roads.some((r) => r.id === e.id))) return false;
-  if (G.phase === "setup") {
+  if (roadTaken(e)) return false;
+  if (G.phase === "setup-road") {
     const last = p.spots[p.spots.length - 1];
-    return last && (e.a === last.v || e.b === last.v) && !p.roads.some((r) => {
-      const lastRoadOfThisSpot = true;
-      return false;
-    }) && p.roads.filter((r) => r.a === last.v || r.b === last.v).length === 0;
+    return !!(last && (e.a === last.v || e.b === last.v));
   }
   return playerTouchesVertex(p, e.a) || playerTouchesVertex(p, e.b);
+}
+function canBuildHouse(p, id) {
+  if (!vertexFree(id)) return false;
+  if (G.phase === "setup") return true;
+  return p.roads.some((r) => r.a === id || r.b === id);
+}
+function canBuildCity(p, id) {
+  return !!p.spots.find((s) => s.v === id && !s.city);
 }
 
 function pay(p, cost) {
@@ -436,6 +445,7 @@ function draw() {
   ctx.save();
   ctx.translate(W / 2, H / 2 + 8);
   G.hexes.forEach((h) => drawHex(h));
+  drawGuides();
   GRAPH.edges.forEach((e) => {
     const owner = G.players.find((p) => p.roads.some((r) => r.id === e.id));
     if (!owner) return;
@@ -459,7 +469,90 @@ function draw() {
     const s = city ? 28 : 22;
     if (piece && piece.complete) ctx.drawImage(piece, v.x - s / 2, v.y - s + 4, s, s);
   });
+  drawHover();
   ctx.restore();
+}
+
+function humanPlay() {
+  const p = current();
+  return p.human || G.phase === "robber";
+}
+function wantHouse() {
+  return G.phase === "setup" || (G.phase === "main" && G.rolled && (MODE === "house" || MODE === "auto" || MODE === "city"));
+}
+function wantRoad() {
+  return G.phase === "setup-road" || (G.phase === "main" && G.rolled && (MODE === "road" || MODE === "auto"));
+}
+function drawGuides() {
+  if (!GRAPH || G.winner) return;
+  const p = current();
+  if (!p.human && G.phase !== "robber") return;
+  if (G.phase === "robber") {
+    G.hexes.forEach((h) => {
+      if (h.q === G.robber.q && h.r === G.robber.r) return;
+      const c = hexToPixel(h.q, h.r, SIZE);
+      ctx.beginPath();
+      ctx.arc(c.x, c.y + 16, 7, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(255,220,120,.35)";
+      ctx.fill();
+    });
+    return;
+  }
+  if (wantRoad()) {
+    GRAPH.edges.forEach((e) => {
+      if (!canBuildRoad(p, e)) return;
+      const a = GRAPH.verts.get(e.a), b = GRAPH.verts.get(e.b);
+      ctx.strokeStyle = "rgba(243,230,200,.55)";
+      ctx.lineWidth = 4;
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    });
+  }
+  if (wantHouse()) {
+    GRAPH.verts.forEach((v) => {
+      const cityOk = G.phase === "main" && canBuildCity(p, v.id) && (MODE === "city" || MODE === "auto");
+      const houseOk = canBuildHouse(p, v.id) && MODE !== "city" && MODE !== "road";
+      if (!houseOk && !cityOk) return;
+      ctx.beginPath();
+      ctx.arc(v.x, v.y, cityOk ? 8 : 6, 0, Math.PI * 2);
+      ctx.fillStyle = cityOk ? "rgba(255,210,80,.85)" : p.color;
+      ctx.globalAlpha = 0.85;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = "#f3e6c8";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+  }
+}
+function drawHover() {
+  const p = current();
+  if (HOVER.e && wantRoad() && canBuildRoad(p, HOVER.e)) {
+    const a = GRAPH.verts.get(HOVER.e.a), b = GRAPH.verts.get(HOVER.e.b);
+    ctx.strokeStyle = p.color;
+    ctx.lineWidth = 8;
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+  if (HOVER.v && wantHouse()) {
+    const okH = canBuildHouse(p, HOVER.v.id);
+    const okC = G.phase === "main" && canBuildCity(p, HOVER.v.id);
+    if (okH || okC) {
+      ctx.beginPath();
+      ctx.arc(HOVER.v.x, HOVER.v.y, 11, 0, Math.PI * 2);
+      ctx.strokeStyle = "#fff4d2";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+  }
 }
 
 function drawHex(h) {
@@ -515,29 +608,38 @@ function drawHex(h) {
   }
 }
 
-function hit(ev) {
+function canvasPoint(ev) {
   const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
-  const x = (ev.clientX - rect.left) * scaleX - canvas.width / 2;
-  const y = (ev.clientY - rect.top) * scaleY - (canvas.height / 2 + 8);
-  let bestV = null, bestVd = 18 * 18;
+  const src = ev.touches ? ev.touches[0] : ev;
+  const x = (src.clientX - rect.left) * (canvas.width / rect.width) - canvas.width / 2;
+  const y = (src.clientY - rect.top) * (canvas.height / rect.height) - (canvas.height / 2 + 8);
+  return { x, y };
+}
+function hit(ev) {
+  const { x, y } = canvasPoint(ev);
+  let bestV = null, bestVd = 26 * 26;
   GRAPH.verts.forEach((v) => {
     const d = (v.x - x) ** 2 + (v.y - y) ** 2;
     if (d < bestVd) { bestVd = d; bestV = v; }
   });
-  let bestE = null, bestEd = 12;
+  let bestE = null, bestEd = 16;
   GRAPH.edges.forEach((e) => {
     const a = GRAPH.verts.get(e.a), b = GRAPH.verts.get(e.b);
     const d = distToSeg(x, y, a.x, a.y, b.x, b.y);
     if (d < bestEd) { bestEd = d; bestE = e; }
   });
-  let bestH = null, bestHd = SIZE * SIZE;
+  let bestH = null, bestHd = SIZE * SIZE * 0.72;
   G.hexes.forEach((h) => {
     const c = hexToPixel(h.q, h.r, SIZE);
     const d = (c.x - x) ** 2 + (c.y - y) ** 2;
     if (d < bestHd) { bestHd = d; bestH = h; }
   });
+  if (MODE === "road") bestV = null;
+  if (MODE === "house" || MODE === "city") bestE = null;
+  if (bestV && bestE) {
+    if (Math.sqrt(bestVd) <= bestEd + 2) bestE = null;
+    else bestV = null;
+  }
   return { v: bestV, e: bestE, h: bestH };
 }
 
@@ -551,40 +653,66 @@ function distToSeg(px, py, x1, y1, x2, y2) {
   return Math.sqrt(dx * dx + dy * dy);
 }
 
+function onMove(ev) {
+  if (!GRAPH) return;
+  HOVER = hit(ev);
+  draw();
+}
 function onClick(ev) {
   if (G.winner) return;
   const p = current();
   if (!p.human && G.phase !== "robber") return;
   const hitp = hit(ev);
-  if (G.phase === "setup" && hitp.v) return setupPlaceSettlement(hitp.v.id);
-  if (G.phase === "setup-road" && hitp.e) return setupPlaceRoad(hitp.e);
+  if (G.phase === "setup" && hitp.v && canBuildHouse(p, hitp.v.id)) return setupPlaceSettlement(hitp.v.id);
+  if (G.phase === "setup-road" && hitp.e && canBuildRoad(p, hitp.e)) return setupPlaceRoad(hitp.e);
   if (G.phase === "robber" && hitp.h) return moveRobber(hitp.h);
   if (G.phase === "main" && p.human && G.rolled) {
     if (hitp.v) {
-      const mine = p.spots.find((s) => s.v === hitp.v.id);
-      if (mine && !mine.city) return buildCity(hitp.v.id);
-      return buildSettlement(hitp.v.id);
+      if ((MODE === "city" || MODE === "auto") && canBuildCity(p, hitp.v.id)) return buildCity(hitp.v.id);
+      if ((MODE === "house" || MODE === "auto") && canBuildHouse(p, hitp.v.id)) return buildSettlement(hitp.v.id);
     }
-    if (hitp.e) return buildRoad(hitp.e);
+    if (hitp.e && (MODE === "road" || MODE === "auto") && canBuildRoad(p, hitp.e)) return buildRoad(hitp.e);
   }
+}
+function setMode(m) {
+  MODE = m;
+  ["auto","road","house","city"].forEach((k) => {
+    const el = document.getElementById("mode" + k[0].toUpperCase() + k.slice(1));
+    if (el) el.classList.toggle("primary", MODE === k);
+  });
 }
 
 function renderLog() {
   document.getElementById("log").innerHTML = G.log.slice(0, 6).map((l) => `<div>${l}</div>`).join("");
 }
 
+function hintText() {
+  const p = current();
+  if (G.winner) return G.winner.name + " wint met " + G.winner.vp + " punten.";
+  if (G.phase === "setup") return p.name + ": tik een lichtend hoekpunt voor een huis.";
+  if (G.phase === "setup-road") return p.name + ": tik een stippellijn voor een pad vanaf je huis.";
+  if (G.phase === "robber") return p.name + ": tik een tegel voor de zwerver.";
+  if (G.phase === "main" && !G.rolled) return p.name + ": dobbel eerst.";
+  return p.name + ": kies Pad / Huis / Stad of tik een lichtend punt.";
+}
 function renderAll() {
   draw();
-  const p = G.players[0];
+  const me = G.players[0];
+  const p = current();
   document.getElementById("res").innerHTML = RES.map((k) =>
-    `<span class="res">${k} <b>${p.res[k]}</b></span>`
+    `<span class="res">${k} <b>${me.res[k]}</b></span>`
   ).join("");
   document.getElementById("status").textContent =
-    (G.winner ? G.winner.name + " wint!" : current().name + " · " + G.phase) +
-    (G.lastDice ? " · worp " + G.lastDice : "") +
-    " · VP " + G.players.map((x) => x.name[0] + x.vp).join(" ");
-  document.getElementById("roll").disabled = !(current().human && G.phase === "main" && !G.rolled);
-  document.getElementById("end").disabled = !(current().human && G.phase === "main" && G.rolled);
+    (G.winner ? G.winner.name + " wint!" : "Beurt: " + p.name) +
+    (G.lastDice ? " · worp " + G.lastDice : "");
+  document.getElementById("hint").textContent = hintText();
+  const dot = document.getElementById("turnDot");
+  if (dot) dot.style.background = p.color;
+  document.getElementById("players").innerHTML = G.players.map((x) =>
+    `<div class="seat${x.id === p.id ? " on" : ""}"><span class="sw" style="background:${x.color}"></span>${x.name} · ${x.vp} VP${x.human ? "" : " · AI"}</div>`
+  ).join("");
+  document.getElementById("roll").disabled = !(p.human && G.phase === "main" && !G.rolled);
+  document.getElementById("end").disabled = !(p.human && G.phase === "main" && G.rolled);
   renderLog();
 }
 
@@ -611,7 +739,10 @@ function tradePrompt() {
 window.addEventListener("load", () => {
   canvas = document.getElementById("board");
   canvas.addEventListener("click", onClick);
+  canvas.addEventListener("mousemove", onMove);
+  canvas.addEventListener("touchstart", (e) => { onMove(e); }, { passive: true });
   layoutGraph();
   loadImages(() => renderAll());
+  setMode("auto");
   renderAll();
 });
