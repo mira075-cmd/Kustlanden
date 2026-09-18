@@ -194,12 +194,27 @@ function log(msg) {
 
 function current() { return G.players[G.turn % G.players.length]; }
 
+function isLandHex(ref) {
+  const h = G.hexes.find((x) => x.q === ref.q && x.r === ref.r);
+  return !!(h && h.type !== "zee");
+}
+function vertexOnLand(id) {
+  const v = GRAPH.verts.get(id);
+  return !!(v && v.hexes.some(isLandHex));
+}
+function edgeOnLand(e) {
+  const a = GRAPH.verts.get(e.a), b = GRAPH.verts.get(e.b);
+  if (!a || !b) return false;
+  const shared = a.hexes.filter((h) => b.hexes.some((x) => x.q === h.q && x.r === h.r));
+  return shared.some(isLandHex);
+}
 function vertexFree(id) {
+  if (!vertexOnLand(id)) return false;
   const used = new Set();
   G.players.forEach((p) => p.spots.forEach((s) => used.add(s.v)));
   if (used.has(id)) return false;
   const adj = adjacentVertices(id);
-  return !adj.some((a) => used.has(a));
+  return !adj.some((x) => used.has(x));
 }
 
 function adjacentVertices(id) {
@@ -220,7 +235,7 @@ function roadTaken(e) {
   return G.players.some((o) => o.roads.some((r) => r.id === e.id));
 }
 function canBuildRoad(p, e) {
-  if (roadTaken(e)) return false;
+  if (roadTaken(e) || !edgeOnLand(e)) return false;
   if (G.phase === "setup-road") {
     const last = p.spots[p.spots.length - 1];
     return !!(last && (e.a === last.v || e.b === last.v));
