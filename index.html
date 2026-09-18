@@ -14,7 +14,7 @@
     <header>
       <div>
         <h1>Kustlanden</h1>
-        <div class="sub" id="status">Laden…</div>
+        <div class="sub" id="hint">Laden…</div>
       </div>
       <div class="row">
         <button class="pill" onclick="showHelp()">Regels</button>
@@ -24,8 +24,16 @@
     <div id="boardWrap">
       <canvas id="board" width="720" height="640"></canvas>
     </div>
+    <div id="turnBar"><span class="dot" id="turnDot"></span><span id="status">Laden…</span></div>
+    <div id="players" class="row"></div>
     <div id="dock">
       <div class="row" id="res"></div>
+      <div class="row" id="modes">
+        <button class="pill" id="modeAuto" onclick="setMode('auto')">Auto</button>
+        <button class="pill" id="modeRoad" onclick="setMode('road')">Pad</button>
+        <button class="pill" id="modeHouse" onclick="setMode('house')">Huis</button>
+        <button class="pill" id="modeCity" onclick="setMode('city')">Stad</button>
+      </div>
       <div class="row">
         <button class="pill primary" id="roll" onclick="rollDice()">Dobbel</button>
         <button class="pill" id="end" onclick="endTurn()">Einde beurt</button>
