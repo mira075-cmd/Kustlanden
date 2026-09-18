@@ -1,0 +1,56 @@
+:root {
+  --bg: #1a1410;
+  --panel: #241c16;
+  --ink: #f3e6c8;
+  --muted: #b9a78a;
+  --gold: #c4a574;
+  --line: #3a2f24;
+  --p0: #c45c4a;
+  --p1: #4a7ec4;
+  --p2: #d4a017;
+  --p3: #5aa06a;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: Georgia, "Times New Roman", serif; }
+button, select { font: inherit; }
+#app { display: flex; flex-direction: column; min-height: 100%; }
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-bottom: 1px solid var(--line); background: #201810;
+}
+header h1 { margin: 0; font-size: 1.15rem; letter-spacing: .04em; color: var(--gold); }
+header .sub { color: var(--muted); font-size: .8rem; }
+#boardWrap { flex: 1; display: flex; justify-content: center; align-items: center; padding: 8px; }
+canvas { max-width: 100%; height: auto; touch-action: manipulation; background: #152018; border-radius: 12px; }
+#dock {
+  border-top: 1px solid var(--line); background: var(--panel);
+  padding: 10px 12px 16px; display: grid; gap: 8px;
+}
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.res {
+  display: flex; gap: 6px; align-items: center; background: #1b1511;
+  border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; font-size: .85rem;
+}
+.res b { color: var(--gold); }
+.pill {
+  border: 1px solid var(--line); background: #2a2118; color: var(--ink);
+  border-radius: 10px; padding: 8px 10px; cursor: pointer;
+}
+.pill.primary { background: var(--gold); color: #1a1410; font-weight: 700; }
+.pill:disabled { opacity: .45; cursor: not-allowed; }
+#log {
+  max-height: 88px; overflow: auto; font-size: .8rem; color: var(--muted);
+  background: #1b1511; border-radius: 8px; padding: 6px 8px;
+}
+.me { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+#modal {
+  position: fixed; inset: 0; background: rgba(0,0,0,.55); display: none;
+  align-items: center; justify-content: center; padding: 16px;
+}
+#modal.show { display: flex; }
+#modal .box {
+  background: var(--panel); border: 1px solid var(--gold); border-radius: 14px;
+  padding: 16px; width: min(420px, 100%);
+}
+#modal h2 { margin: 0 0 8px; color: var(--gold); font-size: 1.1rem; }
+#modal p { margin: 0 0 12px; color: var(--muted); font-size: .92rem; }
