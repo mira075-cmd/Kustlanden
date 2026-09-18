@@ -101,3 +101,24 @@ canvas {
   #players { grid-template-columns: repeat(2, 1fr); }
   #steps { display: none; }
 }
+
+#lobby {
+  position: fixed; inset: 0; background: rgba(8,6,4,.78);
+  display: none; align-items: center; justify-content: center;
+  padding: 16px; z-index: 20;
+}
+#lobby.show { display: flex; }
+#lobby .box {
+  width: min(520px, 100%); max-height: 92dvh; overflow: auto;
+  background: #1c1612; border: 1px solid #e0b56a; border-radius: 18px; padding: 16px;
+}
+#lobby h2 { margin: 0 0 8px; font-family: Georgia, serif; color: #e0b56a; }
+.maps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+.mapcard {
+  text-align: left; background: #2a2118; border: 1px solid #3d3228;
+  border-radius: 12px; padding: 10px; cursor: pointer; color: #f6ead4;
+}
+.mapcard.on { border-color: #e0b56a; box-shadow: 0 0 0 1px #e0b56a; }
+.mapcard small { display: block; color: #b8a58a; margin-top: 4px; }
+.seatrow { display: flex; gap: 6px; align-items: center; margin: 6px 0; }
+.seatrow select, .seatrow input { flex: 1; }
