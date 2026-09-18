@@ -695,21 +695,31 @@ function hintText() {
   if (G.phase === "main" && !G.rolled) return p.name + ": dobbel eerst.";
   return p.name + ": kies Pad / Huis / Stad of tik een lichtend punt.";
 }
+const RES_DOT = { hout:"#2f6b3a", steen:"#8a5a3b", graan:"#d4b43a", wol:"#7aa86a", erts:"#6b7380" };
 function renderAll() {
   draw();
   const me = G.players[0];
   const p = current();
   document.getElementById("res").innerHTML = RES.map((k) =>
-    `<span class="res">${k} <b>${me.res[k]}</b></span>`
+    `<span class="res"><span class="ic" style="background:${RES_DOT[k]}"></span>${k}<b>${me.res[k]}</b></span>`
   ).join("");
-  document.getElementById("status").textContent =
-    (G.winner ? G.winner.name + " wint!" : "Beurt: " + p.name) +
-    (G.lastDice ? " · worp " + G.lastDice : "");
+  document.getElementById("status").textContent = G.winner
+    ? G.winner.name + " wint"
+    : p.name + (G.lastDice ? " · " + G.lastDice : "");
   document.getElementById("hint").textContent = hintText();
   const dot = document.getElementById("turnDot");
   if (dot) dot.style.background = p.color;
+  const setup = G.phase === "setup" || G.phase === "setup-road";
+  const s1 = document.getElementById("s1");
+  const s2 = document.getElementById("s2");
+  if (s1) {
+    s1.classList.toggle("on", !setup && G.phase === "main" && !G.rolled);
+    s2.classList.toggle("on", setup || G.phase === "robber" || (G.phase === "main" && !!G.rolled));
+    s1.textContent = setup ? "Start" : "1 Dobbel";
+    s2.textContent = G.phase === "setup" ? "Huis" : G.phase === "setup-road" ? "Pad" : G.phase === "robber" ? "Zwerver" : "2 Bouw";
+  }
   document.getElementById("players").innerHTML = G.players.map((x) =>
-    `<div class="seat${x.id === p.id ? " on" : ""}"><span class="sw" style="background:${x.color}"></span>${x.name} · ${x.vp} VP${x.human ? "" : " · AI"}</div>`
+    `<div class="seat${x.id === p.id ? " on" : ""}"><div class="name"><span class="sw" style="background:${x.color}"></span>${x.name}</div><div class="meta">${x.vp} VP · ${x.human ? "jij" : "AI"}</div></div>`
   ).join("");
   document.getElementById("roll").disabled = !(p.human && G.phase === "main" && !G.rolled);
   document.getElementById("end").disabled = !(p.human && G.phase === "main" && G.rolled);
