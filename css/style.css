@@ -122,3 +122,16 @@ canvas {
 .mapcard small { display: block; color: #b8a58a; margin-top: 4px; }
 .seatrow { display: flex; gap: 6px; align-items: center; margin: 6px 0; }
 .seatrow select, .seatrow input { flex: 1; }
+
+#diceFx {
+  position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+  gap: 14px; background: rgba(10,8,6,.45); z-index: 15; flex-direction: column;
+}
+#diceFx.show { display: flex; }
+.die {
+  width: 64px; height: 64px; border-radius: 12px;
+  background: #f4efe4; color: #1a120a; font: 800 28px Georgia, serif;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 10px 24px rgba(0,0,0,.4), inset 0 0 0 3px #c4a574;
+}
+#diceSum { color: #f6ead4; font: 700 18px Georgia, serif; }
