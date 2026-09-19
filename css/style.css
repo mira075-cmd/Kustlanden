@@ -50,6 +50,7 @@ button, select { font: inherit; color: inherit; }
   position: absolute; left: 6px; right: 6px; top: 6px;
   display: flex; gap: 5px; align-items: center; flex-wrap: wrap;
   pointer-events: none;
+  z-index: 8;
 }
 #boardTools > * { pointer-events: auto; }
 .who { min-width: 90px; }
