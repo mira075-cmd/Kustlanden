@@ -1,5 +1,5 @@
 /* 3D board view. Game state stays in game.js */
-const V3 = { ok: false, want: (typeof localStorage !== "undefined" && localStorage.getItem("kl_3d") === "0") ? false : true, yaw: 0.35, pitch: 0.95, dist: 620 };
+const V3 = { ok: false, want: false, yaw: 0.35, pitch: 0.95, dist: 620 };
 function setViewMode(on) {
   V3.want = !!on;
   try { localStorage.setItem("kl_3d", on ? "1" : "0"); } catch (e) {}
@@ -37,7 +37,7 @@ function setViewMode(on) {
     if (btn) btn.textContent = "3D";
     if (typeof resetView === "function") resetView();
   }
-  draw();
+  if (G && G.hexes) draw();
 }
 function toggleViewMode() { setViewMode(!V3.want); }
 function init3() {
@@ -248,7 +248,7 @@ function cam3() {
   V3.c.lookAt(0, 0, 0);
 }
 function draw3() {
-  if (!V3.ok) return false;
+  if (!V3.ok || !G || !G.hexes) return false;
   const sig = G ? G.hexes.length + ":" + (G.mapId || "") + ":" + G.hexes.map((h) => h.type + h.number).join("") : "";
   if (sig !== V3.sig) rebuild3();
   drawBits3();
