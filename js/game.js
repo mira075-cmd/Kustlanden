@@ -716,9 +716,9 @@ function playerRate(p, res) {
 }
 
 function draw() {
-  if (typeof THREE !== "undefined") {
-    if (typeof init3 === "function" && (!V3 || !V3.ok)) init3();
-    if (V3 && V3.ok && typeof draw3 === "function") { draw3(); return; }
+  if (V3 && V3.want && typeof THREE !== "undefined") {
+    if (typeof init3 === "function" && !V3.ok) init3();
+    if (V3.ok && typeof draw3 === "function") { draw3(); return; }
   }
   canvas = document.getElementById("board");
   ctx = canvas.getContext("2d");
