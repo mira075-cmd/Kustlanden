@@ -7,89 +7,81 @@
   <title>Kustlanden</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon.svg" />
-  <link rel="stylesheet" href="css/style.css?v=5" />
+  <link rel="stylesheet" href="css/style.css?v=6" />
 </head>
 <body>
-  <div id="app">
+  <div id="table">
+    <aside id="north" class="rail ns"></aside>
+    <aside id="west" class="rail ew"></aside>
     <div id="boardStage">
-      <canvas id="board" width="720" height="780"></canvas>
-      <div id="boardHud">
-        <div class="hudTop">
-          <div class="who">
-            <span class="dot" id="turnDot"></span>
-            <div>
-              <b id="status">Laden…</b>
-              <small id="hint">Even geduld</small>
-            </div>
-          </div>
-          <div id="hudDice">
-            <span class="die" id="dieA">?</span>
-            <span class="die" id="dieB">?</span>
-          </div>
-          <button class="pill primary" id="roll" onclick="rollDice()">Dobbel</button>
-          <button class="pill" id="end" onclick="endTurn()">Klaar</button>
-        </div>
-        <div id="players"></div>
-        <div class="hudGrow"></div>
-        <div class="hudBottom">
-          <div class="row" id="res"></div>
-          <div class="row" id="modes">
-            <button class="pill" id="modeAuto" onclick="setMode('auto')">Auto</button>
-            <button class="pill" id="modeRoad" onclick="setMode('road')">Pad</button>
-            <button class="pill" id="modeHouse" onclick="setMode('house')">Huis</button>
-            <button class="pill" id="modeCity" onclick="setMode('city')">Stad</button>
-            <button class="pill" id="modeShip" onclick="setMode('ship')">Boot</button>
-            <button class="pill" onclick="buyDev()">Kaart</button>
-          </div>
-          <div class="row" id="hand"></div>
-          <div class="row slim">
-            <select id="fromRes" class="pill">
-              <option value="hout">4 hout</option>
-              <option value="steen">4 steen</option>
-              <option value="graan">4 graan</option>
-              <option value="wol">4 wol</option>
-              <option value="erts">4 erts</option>
-            </select>
-            <select id="toRes" class="pill">
-              <option value="hout">→ hout</option>
-              <option value="steen">→ steen</option>
-              <option value="graan">→ graan</option>
-              <option value="wol">→ wol</option>
-              <option value="erts">→ erts</option>
-            </select>
-            <button class="pill" onclick="tradePrompt()">Bank</button>
-            <button class="pill" onclick="showHelp()">?</button>
-            <button class="pill" onclick="restart()">Nieuw</button>
-          </div>
-        </div>
+      <canvas id="board" width="720" height="720"></canvas>
+      <div id="boardTools">
+        <span class="dot" id="turnDot"></span>
+        <div class="who"><b id="status">Laden…</b><small id="hint"></small></div>
+        <span class="die" id="dieA">?</span>
+        <span class="die" id="dieB">?</span>
+        <button class="mini primary" id="roll" onclick="rollDice()">Dobbel</button>
+        <button class="mini" id="end" onclick="endTurn()">Klaar</button>
+        <button class="mini" onclick="toggleTray()">Bouw</button>
       </div>
     </div>
+    <aside id="east" class="rail ew"></aside>
+    <aside id="south" class="rail ns"></aside>
   </div>
+  <div id="tray">
+    <div class="row" id="modes">
+      <button class="mini" id="modeAuto" onclick="setMode('auto')">Auto</button>
+      <button class="mini" id="modeRoad" onclick="setMode('road')">Pad</button>
+      <button class="mini" id="modeHouse" onclick="setMode('house')">Huis</button>
+      <button class="mini" id="modeCity" onclick="setMode('city')">Stad</button>
+      <button class="mini" id="modeShip" onclick="setMode('ship')">Boot</button>
+      <button class="mini" onclick="buyDev()">Kaart</button>
+    </div>
+    <div class="row" id="hand"></div>
+    <div class="row slim">
+      <select id="fromRes" class="mini">
+        <option value="hout">4 hout</option>
+        <option value="steen">4 steen</option>
+        <option value="graan">4 graan</option>
+        <option value="wol">4 wol</option>
+        <option value="erts">4 erts</option>
+      </select>
+      <select id="toRes" class="mini">
+        <option value="hout">→ hout</option>
+        <option value="steen">→ steen</option>
+        <option value="graan">→ graan</option>
+        <option value="wol">→ wol</option>
+        <option value="erts">→ erts</option>
+      </select>
+      <button class="mini" onclick="tradePrompt()">Bank</button>
+      <button class="mini" onclick="showHelp()">?</button>
+      <button class="mini" onclick="restart()">Nieuw</button>
+    </div>
+  </div>
+  <div id="res" hidden></div>
+  <div id="players" hidden></div>
   <div id="diceFx"></div>
   <div id="modal" onclick="if(event.target.id==='modal')hideHelp()">
     <div class="box">
       <h2>Kustlanden</h2>
-      <p>Eigen hex-spel. Geen officiële editie of kunst van een ander merk.</p>
-      <p><b>Doel:</b> 10 punten. Huis 1, stad 2.</p>
-      <p><b>Beurt:</b> dobbel → bouw op de lichtende plekken → klaar.</p>
-      <p><b>Boot:</b> hout + wol op zee/kust. <b>Kaart:</b> wol + graan + erts.</p>
-      <button class="pill primary" onclick="hideHelp()">Spelen</button>
+      <p>Spelers zitten rond de tafel. Tik het eiland in het midden.</p>
+      <p>Huis 1 VP, stad 2 VP, 10 wint. Boot: hout+wol. Kaart: wol+graan+erts.</p>
+      <button class="mini primary" onclick="hideHelp()">Spelen</button>
     </div>
   </div>
   <div id="lobby" class="show">
     <div class="box">
       <h2>Nieuwe partij</h2>
-      <p style="color:#b8a58a;margin:0 0 10px">Kies kaart, aantal spelers en wie mens of AI is.</p>
       <label>Spelers
-        <select id="cfgCount" class="pill" onchange="syncLobby()">
+        <select id="cfgCount" class="mini" onchange="syncLobby()">
           <option>2</option><option>3</option><option selected>4</option>
         </select>
       </label>
       <div id="cfgSeats"></div>
       <div class="maps" id="cfgMaps"></div>
-      <button class="pill primary" onclick="startFromLobby()">Start</button>
+      <button class="mini primary" onclick="startFromLobby()">Start</button>
     </div>
   </div>
-  <script src="js/game.js?v=5"></script>
+  <script src="js/game.js?v=6"></script>
 </body>
 </html>
