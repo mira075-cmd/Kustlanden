@@ -3,19 +3,39 @@ const V3 = { ok: false, want: (typeof localStorage !== "undefined" && localStora
 function setViewMode(on) {
   V3.want = !!on;
   try { localStorage.setItem("kl_3d", on ? "1" : "0"); } catch (e) {}
+  const stage = document.getElementById("boardStage");
   const two = document.getElementById("board");
   const three = document.getElementById("board3");
   const btn = document.getElementById("viewMode");
+  if (stage) stage.classList.toggle("mode-3d", !!on);
+  if (stage) stage.classList.toggle("mode-2d", !on);
   if (on) {
     if (typeof THREE !== "undefined") init3();
-    if (three) three.style.display = "block";
-    if (two) two.style.display = "none";
+    if (three) {
+      three.style.display = "block";
+      three.style.visibility = "visible";
+      three.style.pointerEvents = "auto";
+    }
+    if (two) { two.style.display = "none"; two.style.pointerEvents = "none"; }
     if (btn) btn.textContent = "2D";
   } else {
     V3.ok = false;
-    if (three) three.style.display = "none";
-    if (two) two.style.display = "block";
+    if (three) {
+      three.style.display = "none";
+      three.style.visibility = "hidden";
+      three.style.pointerEvents = "none";
+      three.style.width = "0";
+      three.style.height = "0";
+    }
+    if (two) {
+      two.style.display = "block";
+      two.style.visibility = "visible";
+      two.style.pointerEvents = "auto";
+      two.style.width = "100%";
+      two.style.height = "100%";
+    }
     if (btn) btn.textContent = "3D";
+    if (typeof resetView === "function") resetView();
   }
   draw();
 }
