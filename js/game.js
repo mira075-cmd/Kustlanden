@@ -660,7 +660,7 @@ function layoutGraph() {
   const n = (G.hexes || []).length;
   SIZE = n > 50 ? 26 : n > 30 ? 32 : 42;
   GRAPH = buildGraph(G.hexes, SIZE);
-  if (G && !G.harbors) G.harbors = placeHarbors();
+  G.harbors = placeHarbors();
 }
 function vertexCoastal(v) {
   const land = v.hexes.some(isLandHex);
@@ -673,18 +673,27 @@ function vertexCoastal(v) {
   });
 }
 function placeHarbors() {
-  const coasts = [...GRAPH.verts.values()].filter(vertexCoastal);
-  coasts.sort((a, b) => a.x - b.x || a.y - b.y);
+  let coasts = [...GRAPH.verts.values()].filter(vertexCoastal);
+  if (!coasts.length) {
+    coasts = [...GRAPH.verts.values()].filter((v) => v.hexes.some(isLandHex) && v.hexes.length < 3);
+  }
+  coasts.sort((a, b) => Math.atan2(a.y, a.x) - Math.atan2(b.y, b.x));
   const picked = [];
+  const minD = Math.max(36, SIZE * 1.15);
   coasts.forEach((v) => {
-    if (picked.some((p) => Math.hypot(p.x - v.x, p.y - v.y) < SIZE * 1.7)) return;
+    if (picked.some((p) => Math.hypot(p.x - v.x, p.y - v.y) < minD)) return;
     picked.push(v);
   });
+  while (picked.length < 5 && coasts.length) {
+    const v = coasts[picked.length * 2 % coasts.length];
+    if (!picked.includes(v)) picked.push(v);
+    else break;
+  }
   const types = shuffle(["any","any","any","any","hout","steen","graan","wol","erts"]);
-  return picked.slice(0, types.length).map((v, i) => ({
+  return picked.slice(0, 9).map((v, i) => ({
     v: v.id,
-    kind: types[i],
-    rate: types[i] === "any" ? 3 : 2,
+    kind: types[i % types.length],
+    rate: types[i % types.length] === "any" ? 3 : 2,
   }));
 }
 function playerRate(p, res) {
@@ -706,7 +715,6 @@ function draw() {
   ctx.save();
   ctx.translate(W / 2, H / 2 + 8);
   G.hexes.forEach((h) => drawHex(h));
-  drawHarbors();
   drawGuides();
   GRAPH.edges.forEach((e) => {
     const owner = G.players.find((p) => p.roads.some((r) => r.id === e.id));
@@ -736,6 +744,7 @@ function draw() {
     const city = owner.spots.find((s) => s.v === v.id).city;
     drawPiece(v.x, v.y, owner.color, city);
   });
+  drawHarbors();
   drawHover();
   ctx.restore();
 }
@@ -855,22 +864,43 @@ function drawPiece(x, y, color, city) {
   ctx.restore();
 }
 
+function harborOffset(v) {
+  let sx = 0, sy = 0, n = 0;
+  v.hexes.forEach((ref) => {
+    const h = G.hexes.find((x) => x.q === ref.q && x.r === ref.r);
+    if (!h || h.type !== "zee") return;
+    const c = hexToPixel(h.q, h.r, SIZE);
+    sx += c.x; sy += c.y; n++;
+  });
+  if (!n) {
+    const len = Math.hypot(v.x, v.y) || 1;
+    return { x: v.x + (v.x / len) * 18, y: v.y + (v.y / len) * 18 };
+  }
+  sx /= n; sy /= n;
+  const dx = sx - v.x, dy = sy - v.y;
+  const len = Math.hypot(dx, dy) || 1;
+  return { x: v.x + dx / len * 20, y: v.y + dy / len * 20 };
+}
 function drawHarbors() {
   (G.harbors || []).forEach((h) => {
     const v = GRAPH.verts.get(h.v);
     if (!v) return;
+    const p = harborOffset(v);
+    ctx.strokeStyle = "#f0d48a";
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(v.x, v.y); ctx.lineTo(p.x, p.y); ctx.stroke();
     ctx.beginPath();
-    ctx.arc(v.x, v.y, 11, 0, Math.PI * 2);
-    ctx.fillStyle = "#d8c49a";
+    ctx.arc(p.x, p.y, 13, 0, Math.PI * 2);
+    ctx.fillStyle = "#f3e2b0";
     ctx.fill();
     ctx.lineWidth = 2;
     ctx.strokeStyle = "#5a4320";
     ctx.stroke();
     ctx.fillStyle = h.kind === "any" ? "#1a1410" : (RES_COLOR[h.kind] || "#1a1410");
-    ctx.font = "700 9px Segoe UI";
+    ctx.font = "700 10px Segoe UI";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(h.kind === "any" ? "3:1" : "2:1", v.x, v.y);
+    ctx.fillText(h.kind === "any" ? "3:1" : "2", p.x, p.y - 1);
   });
 }
 function drawHex(h) {
