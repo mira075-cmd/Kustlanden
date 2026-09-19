@@ -8,6 +8,7 @@ const RES_COLOR = {
   erts: "#6b7380",
   woestijn: "#c2a36b",
   zee: "#1d4f6e",
+  goud: "#c9a227",
 };
 const SEAT_PRESET = [
   { name: "Rood", color: "#c45c4a" },
@@ -22,6 +23,15 @@ const CORE19 = [
   [-2, 1], [-1, 1], [0, 1], [1, 1],
   [-2, 2], [-1, 2], [0, 2],
 ];
+function hexDisk(R) {
+  const out = [];
+  for (let q = -R; q <= R; q++) {
+    for (let r = -R; r <= R; r++) {
+      if (Math.abs(q + r) <= R) out.push([q, r]);
+    }
+  }
+  return out;
+}
 function around(cells) {
   const have = new Set(cells.map(([q,r]) => q + "," + r));
   const extra = [];
@@ -47,6 +57,14 @@ const MAPS = {
     blurb: "Smal eiland, veel kust.",
     land: [[-3,0],[-2,0],[-1,0],[0,0],[1,0],[2,0],[3,0],[-2,-1],[0,-1],[2,-1],[-1,1],[1,1]],
     zee: around([[-3,0],[-2,0],[-1,0],[0,0],[1,0],[2,0],[3,0],[-2,-1],[0,-1],[2,-1],[-1,1],[1,1]])
+  },
+  grootland: { title: "Grootland", blurb: "Groot binnenland, 37 tegels.", land: hexDisk(3), zee: [] },
+  grooteiland: { title: "Groot eiland", blurb: "Groot eiland met zee-ring.", land: hexDisk(3), zee: around(hexDisk(3)) },
+  archipel: {
+    title: "Archipel",
+    blurb: "Drie eilanden en veel water.",
+    land: [[-4,-1],[-3,-1],[-4,0],[-3,0],[-3,1],[2,-3],[3,-3],[2,-2],[3,-2],[0,3],[1,3],[0,2],[1,2],[-1,3]],
+    zee: around([[-4,-1],[-3,-1],[-4,0],[-3,0],[-3,1],[2,-3],[3,-3],[2,-2],[3,-2],[0,3],[1,3],[0,2],[1,2],[-1,3]])
   },
 };
 let CFG = { map: "kernland", seats: [
@@ -142,6 +160,8 @@ function newBoard(mapId) {
     return { q, r, type, number };
   });
   map.zee.forEach(([q,r]) => hexes.push({ q, r, type: "zee", number: 0 }));
+  const goldN = landN >= 30 ? 3 : landN >= 18 ? 2 : 1;
+  hexes.filter((h) => h.type !== "woestijn" && h.type !== "zee").slice(0, goldN).forEach((h) => { h.type = "goud"; });
   return hexes;
 }
 
@@ -195,7 +215,7 @@ function newDeck() {
   return shuffle(d);
 }
 
-const SIZE = 42;
+let SIZE = 42;
 let G = stateNew();
 let GRAPH = null;
 let selected = null;
@@ -298,17 +318,33 @@ function produce(roll) {
     if (G.robber.q === h.q && G.robber.r === h.r) return;
     if (h.type === "woestijn" || h.type === "zee") return;
     G.players.forEach((p) => {
+      let n = 0;
       p.spots.forEach((s) => {
         const v = GRAPH.verts.get(s.v);
         if (!v) return;
-        if (v.hexes.some((hh) => hh.q === h.q && hh.r === h.r)) {
-          give(p, h.type, s.city ? 2 : 1);
-        }
+        if (v.hexes.some((hh) => hh.q === h.q && hh.r === h.r)) n += s.city ? 2 : 1;
       });
+      if (!n) return;
+      if (h.type === "goud") grantGold(p, n);
+      else give(p, h.type, n);
     });
   });
 }
 
+
+function grantGold(p, n) {
+  for (let i = 0; i < n; i++) {
+    let pick;
+    if (p.human) {
+      pick = prompt(p.name + ": goud, kies hout/steen/graan/wol/erts", "graan");
+    } else {
+      pick = RES.slice().sort((a, b) => (p.res[a]||0) - (p.res[b]||0))[0];
+    }
+    if (!RES.includes(pick)) pick = "graan";
+    give(p, pick, 1);
+    log(p.name + " neemt " + pick + " van goud.");
+  }
+}
 function countRes(p) {
   return RES.reduce((n, k) => n + (p.res[k] || 0), 0);
 }
@@ -614,6 +650,8 @@ function loadImages(done) {
   });
 }
 function layoutGraph() {
+  const n = (G.hexes || []).length;
+  SIZE = n > 50 ? 26 : n > 30 ? 32 : 42;
   GRAPH = buildGraph(G.hexes, SIZE);
   if (G && !G.harbors) G.harbors = placeHarbors();
 }
@@ -875,6 +913,14 @@ function drawHex(h) {
       ctx.arc(c.x, c.y + 14, 8, 0, Math.PI * 2);
       ctx.fill();
     }
+  }
+  if (h.type === "goud") {
+    ctx.fillStyle = "rgba(80,50,0,.35)";
+    ctx.fill();
+    ctx.fillStyle = "#5a3e00";
+    ctx.font = "700 10px Segoe UI";
+    ctx.textAlign = "center";
+    ctx.fillText("goud", c.x, c.y + 16);
   }
   if (h.number) {
     ctx.beginPath();
