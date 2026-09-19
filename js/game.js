@@ -716,6 +716,7 @@ function playerRate(p, res) {
 }
 
 function draw() {
+  if (typeof draw3 === "function" && V3 && V3.ok) { draw3(); return; }
   canvas = document.getElementById("board");
   ctx = canvas.getContext("2d");
   const W = canvas.width, H = canvas.height;
@@ -1024,6 +1025,11 @@ function canvasPoint(ev) {
   return { x, y };
 }
 function zoomBoard(factor, cx, cy) {
+  if (V3 && V3.ok) {
+    V3.dist = Math.min(1100, Math.max(280, V3.dist / factor));
+    draw();
+    return;
+  }
   const ns = Math.min(2.4, Math.max(0.7, VIEW.s * factor));
   const k = ns / VIEW.s;
   VIEW.x = (VIEW.x - (cx || 0)) * k + (cx || 0);
@@ -1059,6 +1065,7 @@ function bindBoardZoom() {
   }, { passive: false });
 }
 function hit(ev) {
+  if (typeof hit3 === "function" && V3 && V3.ok) return hit3(ev);
   const { x, y } = canvasPoint(ev);
   let bestV = null, bestVd = 26 * 26;
   GRAPH.verts.forEach((v) => {
@@ -1102,6 +1109,7 @@ function onMove(ev) {
   draw();
 }
 function onClick(ev) {
+  if (V3 && V3.skipClick) { V3.skipClick = false; return; }
   if (G.winner) return;
   const p = current();
   if (!p.human && G.phase !== "robber") return;
@@ -1340,7 +1348,7 @@ window.addEventListener("load", () => {
   canvas.addEventListener("touchstart", (e) => { if (e.touches.length === 1) onMove(e); }, { passive: true });
   bindBoardZoom();
   layoutGraph();
-  loadImages(() => renderAll());
+  loadImages(() => { if (typeof init3 === "function") init3(); renderAll(); });
   setMode("auto");
   renderAll();
   syncLobby();
