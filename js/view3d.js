@@ -232,6 +232,14 @@ function draw3() {
   const sig = G ? G.hexes.length + ":" + (G.mapId || "") + ":" + G.hexes.map((h) => h.type + h.number).join("") : "";
   if (sig !== V3.sig) rebuild3();
   drawBits3();
+  const now = Date.now();
+  V3.board.children.forEach((m) => {
+    if (!m.userData || m.userData.kind !== "hex" || !m.material || !m.material.emissive) return;
+    const on = G.fx && now < G.fx.until && G.fx.hexes.includes(m.userData.q + "," + m.userData.r);
+    const w = on ? 0.35 + 0.35 * (0.5 + 0.5 * Math.sin(now / 110)) : 0;
+    m.material.emissive.setRGB(w, w * 0.7, 0.05);
+    m.material.emissiveIntensity = on ? 1.2 : 0;
+  });
   cam3();
   V3.r.render(V3.s, V3.c);
   return true;
