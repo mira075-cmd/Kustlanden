@@ -744,11 +744,13 @@ function playerRate(p, res) {
 }
 
 function draw() {
+  if (!G || !G.hexes) return;
   if (V3 && V3.want && typeof THREE !== "undefined") {
     if (typeof init3 === "function" && !V3.ok) init3();
     if (V3.ok && typeof draw3 === "function") { draw3(); return; }
   }
   canvas = document.getElementById("board");
+  if (!canvas) return;
   ctx = canvas.getContext("2d");
   const W = canvas.width, H = canvas.height;
   ctx.clearRect(0, 0, W, H);
