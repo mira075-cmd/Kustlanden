@@ -77,7 +77,7 @@ let CFG = { map: "kernland", seats: [
 function hexKey(q, r) { return q + "," + r; }
 function hexToPixel(q, r, size) {
   const x = size * Math.sqrt(3) * (q + r / 2);
-  const y = size * (3 / 2) * r * 0.82;
+  const y = size * (3 / 2) * r;
   return { x, y };
 }
 function cubeRound(q, r) {
@@ -115,7 +115,7 @@ function buildGraph(hexes, size) {
     pts.forEach((p, i) => {
       let found = null;
       for (const v of verts.values()) {
-        if ((v.x - p.x) ** 2 + (v.y - p.y) ** 2 < 8) { found = v; break; }
+        if ((v.x - p.x) ** 2 + (v.y - p.y) ** 2 < (size * 0.45) ** 2) { found = v; break; }
       }
       if (found) {
         if (!found.hexes.some((hh) => hh.q === h.q && hh.r === h.r)) found.hexes.push({ q: h.q, r: h.r });
@@ -716,7 +716,10 @@ function playerRate(p, res) {
 }
 
 function draw() {
-  if (typeof draw3 === "function" && V3 && V3.ok) { draw3(); return; }
+  if (typeof THREE !== "undefined") {
+    if (typeof init3 === "function" && (!V3 || !V3.ok)) init3();
+    if (V3 && V3.ok && typeof draw3 === "function") { draw3(); return; }
+  }
   canvas = document.getElementById("board");
   ctx = canvas.getContext("2d");
   const W = canvas.width, H = canvas.height;
@@ -1343,13 +1346,21 @@ function playerTrade() {
 
 window.addEventListener("load", () => {
   canvas = document.getElementById("board");
-  canvas.addEventListener("click", onClick);
-  canvas.addEventListener("mousemove", onMove);
-  canvas.addEventListener("touchstart", (e) => { if (e.touches.length === 1) onMove(e); }, { passive: true });
+  bindBoard(canvas);
   bindBoardZoom();
-  layoutGraph();
-  loadImages(() => { if (typeof init3 === "function") init3(); renderAll(); });
   setMode("auto");
-  renderAll();
+  loadImages(() => {
+    if (typeof init3 === "function") init3();
+    const live = (V3 && V3.ok && V3.r) ? V3.r.domElement : canvas;
+    bindBoard(live);
+    if (G) renderAll();
+  });
   syncLobby();
 });
+function bindBoard(el) {
+  if (!el || el.dataset.bound) return;
+  el.dataset.bound = "1";
+  el.addEventListener("click", onClick);
+  el.addEventListener("mousemove", onMove);
+  el.addEventListener("touchstart", (e) => { if (e.touches.length === 1) onMove(e); }, { passive: true });
+}
