@@ -342,7 +342,7 @@ function produce(roll) {
       if (!n) return;
       if (h.type === "goud") grantGold(p, n);
       else give(p, h.type, n);
-      G.fx.gains.push({ pid: p.id, name: p.name, res: h.type === "goud" ? "goud" : h.type, n });
+      G.fx.gains.push({ pid: p.id, name: p.name, color: p.color, res: h.type === "goud" ? "goud" : h.type, n });
     });
   });
   showGains(G.fx);
@@ -414,6 +414,7 @@ function showGains(fx) {
     const d = document.createElement("div");
     d.className = "fly";
     d.style.animationDelay = (i * 0.12) + "s";
+    d.style.color = g.color || "#f6e4a4";
     d.textContent = g.name + " +" + g.n + " " + g.res;
     host.appendChild(d);
   });
