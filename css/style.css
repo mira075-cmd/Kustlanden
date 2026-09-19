@@ -16,8 +16,15 @@ button, select { font: inherit; color: inherit; }
 #south { grid-area: south; }
 #west { grid-area: west; }
 #east { grid-area: east; }
-#boardStage { grid-area: board; position: relative; min-height: 0; }
-#board, #board3 { width:100%; height:100%; display:block; touch-action:manipulation; position:absolute; inset:0; }
+#boardStage { grid-area: board; position: relative; min-height: 0; overflow: hidden; }
+#board {
+  width: 100%; height: 100%; display: block;
+  touch-action: manipulation; position: relative; z-index: 1;
+}
+#board3 {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  display: none; touch-action: manipulation; z-index: 1;
+}
 .rail {
   background: #1a140f;
   border: 1px solid #3a2f24;
