@@ -15,9 +15,12 @@ function setViewMode(on) {
       three.style.display = "block";
       three.style.visibility = "visible";
       three.style.pointerEvents = "auto";
+      three.style.width = "100%";
+      three.style.height = "100%";
     }
     if (two) { two.style.display = "none"; two.style.pointerEvents = "none"; }
     if (btn) btn.textContent = "2D";
+    requestAnimationFrame(() => { size3(); if (G && G.hexes) draw3(); });
   } else {
     V3.ok = false;
     if (three) {
@@ -40,10 +43,20 @@ function setViewMode(on) {
   if (G && G.hexes) draw();
 }
 function toggleViewMode() { setViewMode(!V3.want); }
+function size3() {
+  if (!V3.r) return;
+  const stage = document.getElementById("boardStage");
+  const box = stage ? stage.getBoundingClientRect() : { width: 720, height: 720 };
+  const w = Math.max(16, Math.floor(box.width));
+  const h = Math.max(16, Math.floor(box.height));
+  V3.r.setSize(w, h, false);
+  V3.c.aspect = w / h;
+  V3.c.updateProjectionMatrix();
+}
 function init3() {
   if (!V3.want) return;
   if (typeof THREE === "undefined") return;
-  if (V3.r) { V3.ok = true; return; }
+  if (V3.r) { V3.ok = true; size3(); return; }
   const two = document.getElementById("board");
   const canvas = document.getElementById("board3") || two;
   try {
@@ -55,7 +68,7 @@ function init3() {
   const w = (two && two.clientWidth) || canvas.clientWidth || 720;
   const h = (two && two.clientHeight) || canvas.clientHeight || 720;
   V3.r.setSize(w, h, false);
-  V3.r.setClearColor(0x1a140f, 1);
+  V3.r.setClearColor(0x2a2118, 1);
   V3.s = new THREE.Scene();
   V3.c = new THREE.PerspectiveCamera(42, 1, 8, 4000);
   V3.ray = new THREE.Raycaster();
@@ -234,11 +247,7 @@ function drawBits3() {
   }
 }
 function cam3() {
-  const w = V3.r.domElement.clientWidth || 720;
-  const h = V3.r.domElement.clientHeight || 720;
-  V3.r.setSize(w, h, false);
-  V3.c.aspect = w / Math.max(1, h);
-  V3.c.updateProjectionMatrix();
+  size3();
   const dist = V3.dist / (VIEW && VIEW.s ? VIEW.s : 1);
   V3.c.position.set(
     Math.sin(V3.yaw) * Math.cos(V3.pitch) * dist,
