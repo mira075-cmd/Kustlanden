@@ -649,6 +649,7 @@ function loadImages(done) {
     hout: "img/hout.jpg", steen: "img/steen.jpg", graan: "img/graan.jpg",
     wol: "img/wol.jpg", erts: "img/erts.jpg", woestijn: "img/woestijn.jpg",
     tafel: "img/tafel.jpg", huis: "img/huis.jpg", stad: "img/stad.jpg", zwerver: "img/zwerver.jpg",
+    goud: "img/goud.jpg", zee: "img/zee.jpg",
   };
   let left = Object.keys(files).length;
   Object.entries(files).forEach(([k, src]) => {
@@ -923,7 +924,7 @@ function drawHex(h) {
   ctx.save();
   ctx.clip();
   const tile = IMGS[h.type];
-  if (tile && tile.complete && h.type !== "zee") {
+  if (tile && tile.complete) {
     ctx.drawImage(tile, c.x - SIZE * 1.05, c.y - SIZE * 1.05, SIZE * 2.1, SIZE * 2.1);
   }
   if (h.type === "zee") {
