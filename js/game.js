@@ -320,27 +320,26 @@ function rollDice() {
   const fx = document.getElementById("diceFx");
   const dA = document.getElementById("dieA");
   const dB = document.getElementById("dieB");
-  const sum = document.getElementById("diceSum");
-  if (!fx) { applyRoll(finalA, finalB); return; }
+  if (!dA || !dB) { applyRoll(finalA, finalB); return; }
   G.rolling = true;
-  fx.classList.add("show");
+  if (fx) fx.classList.add("show");
+  dA.classList.add("spin"); dB.classList.add("spin");
   let n = 0;
   const tick = setInterval(() => {
     dA.textContent = 1 + Math.floor(Math.random() * 6);
     dB.textContent = 1 + Math.floor(Math.random() * 6);
-    if (++n >= 14) {
+    if (++n >= 16) {
       clearInterval(tick);
       dA.textContent = finalA;
       dB.textContent = finalB;
-      sum.textContent = finalA + finalB === 7 ? "7 — zwerver" : String(finalA + finalB);
+      dA.classList.remove("spin"); dB.classList.remove("spin");
       setTimeout(() => {
-        fx.classList.remove("show");
-        sum.textContent = "";
+        if (fx) fx.classList.remove("show");
         G.rolling = false;
         applyRoll(finalA, finalB);
-      }, 550);
+      }, 400);
     }
-  }, 55);
+  }, 60);
 }
 function applyRoll(a, b) {
   G.lastDice = a + b;
