@@ -223,6 +223,7 @@ function newDeck() {
 }
 
 let SIZE = 42;
+let VIEW = { s: 1, x: 0, y: 0 };
 let G = stateNew();
 let GRAPH = null;
 let selected = null;
@@ -716,6 +717,8 @@ function draw() {
   if (IMGS.tafel && IMGS.tafel.complete) ctx.drawImage(IMGS.tafel, 0, 0, W, H);
   ctx.save();
   ctx.translate(W / 2, H / 2 + 8);
+  ctx.translate(VIEW.x, VIEW.y);
+  ctx.scale(VIEW.s, VIEW.s);
   G.hexes.forEach((h) => drawHex(h));
   drawGuides();
   GRAPH.edges.forEach((e) => {
@@ -980,9 +983,46 @@ function drawHex(h) {
 function canvasPoint(ev) {
   const rect = canvas.getBoundingClientRect();
   const src = ev.touches ? ev.touches[0] : ev;
-  const x = (src.clientX - rect.left) * (canvas.width / rect.width) - canvas.width / 2;
-  const y = (src.clientY - rect.top) * (canvas.height / rect.height) - (canvas.height / 2 + 8);
+  let x = (src.clientX - rect.left) * (canvas.width / rect.width) - canvas.width / 2;
+  let y = (src.clientY - rect.top) * (canvas.height / rect.height) - (canvas.height / 2 + 8);
+  x = (x - VIEW.x) / VIEW.s;
+  y = (y - VIEW.y) / VIEW.s;
   return { x, y };
+}
+function zoomBoard(factor, cx, cy) {
+  const ns = Math.min(2.4, Math.max(0.7, VIEW.s * factor));
+  const k = ns / VIEW.s;
+  VIEW.x = (VIEW.x - (cx || 0)) * k + (cx || 0);
+  VIEW.y = (VIEW.y - (cy || 0)) * k + (cy || 0);
+  VIEW.s = ns;
+  draw();
+}
+function resetView() { VIEW = { s: 1, x: 0, y: 0 }; draw(); }
+function bindBoardZoom() {
+  canvas.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const { x, y } = canvasPoint(e);
+    zoomBoard(e.deltaY < 0 ? 1.1 : 0.9, x * VIEW.s + VIEW.x, y * VIEW.s + VIEW.y);
+  }, { passive: false });
+  let pinch = 0;
+  canvas.addEventListener("touchstart", (e) => {
+    if (e.touches.length === 2) {
+      pinch = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+    }
+  }, { passive: true });
+  canvas.addEventListener("touchmove", (e) => {
+    if (e.touches.length !== 2 || !pinch) return;
+    e.preventDefault();
+    const d = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    zoomBoard(d / pinch);
+    pinch = d;
+  }, { passive: false });
 }
 function hit(ev) {
   const { x, y } = canvasPoint(ev);
@@ -1252,7 +1292,8 @@ window.addEventListener("load", () => {
   canvas = document.getElementById("board");
   canvas.addEventListener("click", onClick);
   canvas.addEventListener("mousemove", onMove);
-  canvas.addEventListener("touchstart", (e) => { onMove(e); }, { passive: true });
+  canvas.addEventListener("touchstart", (e) => { if (e.touches.length === 1) onMove(e); }, { passive: true });
+  bindBoardZoom();
   layoutGraph();
   loadImages(() => renderAll());
   setMode("auto");
