@@ -152,11 +152,16 @@ function newBoard(mapId) {
   const cycle = ["hout","steen","graan","wol","erts"];
   for (let i = 0; i < landN; i++) bag.push(i === Math.floor(landN/2) ? "woestijn" : cycle[i % cycle.length]);
   const types = shuffle(bag);
-  const nums = shuffle([2,3,3,4,4,5,5,6,6,8,8,9,9,10,10,11,11,12,3,4,5,9,10,11]);
+  const need = types.filter((x) => x !== "woestijn").length;
+  const base = [2,3,3,4,4,5,5,6,6,8,8,9,9,10,10,11,11,12];
+  const extra = [2,3,3,4,4,5,5,6,8,9,9,10,10,11,11,12];
+  const nums = base.slice();
+  while (nums.length < need) nums.push(...extra);
+  const pile = shuffle(nums.slice(0, need));
   let ni = 0;
   const hexes = map.land.map(([q,r], i) => {
     const type = types[i];
-    const number = type === "woestijn" ? 0 : nums[ni++];
+    const number = type === "woestijn" ? 0 : pile[ni++];
     return { q, r, type, number };
   });
   const landSet = new Set(map.land.map(([q, r]) => q + "," + r));
