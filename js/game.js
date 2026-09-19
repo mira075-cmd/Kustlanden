@@ -659,6 +659,7 @@ function draw() {
   ctx.save();
   ctx.translate(W / 2, H / 2 + 8);
   G.hexes.forEach((h) => drawHex(h));
+  drawHarbors();
   drawGuides();
   GRAPH.edges.forEach((e) => {
     const owner = G.players.find((p) => p.roads.some((r) => r.id === e.id));
