@@ -70,7 +70,8 @@ function hexShape() {
   const sh = new THREE.Shape();
   for (let i = 0; i < 6; i++) {
     const a = Math.PI / 180 * (60 * i - 30);
-    const x = SIZE * Math.cos(a), y = SIZE * Math.sin(a);
+    // -sin so rotateX(-90) maps to the same Z as 2D Y
+    const x = SIZE * Math.cos(a), y = -SIZE * Math.sin(a);
     if (i === 0) sh.moveTo(x, y); else sh.lineTo(x, y);
   }
   sh.closePath();
@@ -87,10 +88,15 @@ function texOf(type) {
 function rebuild3() {
   if (!V3.ok || !G) return;
   while (V3.board.children.length) V3.board.remove(V3.board.children[0]);
+  const shape = hexShape();
   G.hexes.forEach((h) => {
     const deep = h.type === "zee" ? 5 : 11;
-    const geo = new THREE.CylinderGeometry(SIZE * 1.02, SIZE * 1.02, deep, 6);
-    geo.rotateY(-Math.PI / 6);
+    const geo = new THREE.ExtrudeGeometry(shape, {
+      depth: deep,
+      bevelEnabled: false,
+      steps: 1,
+    });
+    geo.rotateX(-Math.PI / 2);
     const tex = texOf(h.type);
     const col = new THREE.Color(RES_COLOR[h.type] || "#444");
     const mat = new THREE.MeshStandardMaterial({
@@ -101,7 +107,7 @@ function rebuild3() {
     });
     const mesh = new THREE.Mesh(geo, mat);
     const p = hexToPixel(h.q, h.r, SIZE);
-    mesh.position.set(p.x, deep / 2, p.y);
+    mesh.position.set(p.x, 0, p.y);
     mesh.userData = { kind: "hex", q: h.q, r: h.r };
     V3.board.add(mesh);
     if (h.number) {
