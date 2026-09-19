@@ -35,7 +35,7 @@ button, select { font: inherit; color: inherit; }
 .sw { width:8px; height:8px; border-radius:50%; flex:0 0 auto; }
 .meta { color:var(--muted); font-size:.62rem; }
 .chips { display:flex; gap:3px; flex-wrap:wrap; margin-top:3px; }
-.chip { background:#120e0b; border:1px solid #3a2f24; border-radius:7px; padding:1px 4px; font-size:.6rem; }
+.chip { background:#120e0b; border:1px solid #3a2f24; border-radius:7px; padding:1px 4px; font-size:.55rem; }
 .chip b { color:var(--gold); }
 #west .seat, #east .seat { writing-mode: horizontal-tb; }
 #west .chips, #east .chips { flex-direction: column; }
