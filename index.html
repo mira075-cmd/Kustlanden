@@ -7,7 +7,7 @@
   <title>Kustlanden</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon.svg" />
-  <link rel="stylesheet" href="css/style.css?v=3" />
+  <link rel="stylesheet" href="css/style.css?v=4" />
 </head>
 <body>
   <div id="app">
@@ -27,11 +27,8 @@
         <b id="status">Laden…</b>
         <small id="hint">Even geduld</small>
       </div>
-      <div id="steps">
-        <span class="step" id="s1">1 Dobbel</span>
-        <span class="step" id="s2">2 Bouw</span>
-        <span class="step" id="s3">3 Klaar</span>
-      </div>
+      <div id="hudDice"><span class="die sm" id="dieA">?</span><span class="die sm" id="dieB">?</span></div>
+      <button class="pill primary" id="roll" onclick="rollDice()">Dobbel</button>
     </div>
     <div id="players"></div>
     <div id="boardWrap">
@@ -49,7 +46,6 @@
       </div>
       <div class="row" id="hand"></div>
       <div class="row">
-        <button class="pill primary" id="roll" onclick="rollDice()">Dobbel</button>
         <button class="pill" id="end" onclick="endTurn()">Einde beurt</button>
         <select id="fromRes" class="pill">
           <option value="hout">4 hout</option>
@@ -72,7 +68,7 @@
     </div>
   </div>
   
-<div id="diceFx"><div class="die" id="dieA">?</div><div class="die" id="dieB">?</div><div id="diceSum"></div></div>
+<div id="diceFx"></div>
 <div id="modal" onclick="if(event.target.id==='modal')hideHelp()">
     <div class="box">
       <h2>Kustlanden</h2>
@@ -98,6 +94,6 @@
     <button class="pill primary" onclick="startFromLobby()">Start</button>
   </div>
 </div>
-<script src="js/game.js?v=3"></script>
+<script src="js/game.js?v=4"></script>
 </body>
 </html>
