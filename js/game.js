@@ -648,7 +648,7 @@ function loadImages(done) {
   const files = {
     hout: "img/hout.jpg", steen: "img/steen.jpg", graan: "img/graan.jpg",
     wol: "img/wol.jpg", erts: "img/erts.jpg", woestijn: "img/woestijn.jpg",
-    tafel: "img/tafel.jpg", huis: "img/huis.jpg", stad: "img/stad.jpg", zwerver: "img/zwerver.jpg",
+    tafel: "img/tafel.jpg", huis: "img/huis.jpg", stad: "img/stad.jpg", zwerver: "img/zwerver.png",
     goud: "img/goud.jpg", zee: "img/zee.jpg",
   };
   let left = Object.keys(files).length;
@@ -925,7 +925,7 @@ function drawHex(h) {
   ctx.clip();
   const tile = IMGS[h.type];
   if (tile && tile.complete) {
-    ctx.drawImage(tile, c.x - SIZE * 1.05, c.y - SIZE * 1.05, SIZE * 2.1, SIZE * 2.1);
+    ctx.drawImage(tile, c.x - SIZE * 1.25, c.y - SIZE * 1.25, SIZE * 2.5, SIZE * 2.5);
   }
   if (h.type === "zee") {
     ctx.fillStyle = "rgba(255,255,255,.08)";
@@ -949,7 +949,7 @@ function drawHex(h) {
   ctx.lineWidth = 2.5;
   ctx.stroke();
   if (G.robber.q === h.q && G.robber.r === h.r) {
-    if (IMGS.zwerver && IMGS.zwerver.complete) ctx.drawImage(IMGS.zwerver, c.x - 12, c.y + 2, 24, 36);
+    if (IMGS.zwerver && IMGS.zwerver.complete) ctx.drawImage(IMGS.zwerver, c.x - 14, c.y - 6, 28, 42);
     else {
       ctx.fillStyle = "#111";
       ctx.beginPath();
@@ -1180,7 +1180,7 @@ function toggleTray() {
 }
 function seatHTML(pl, on) {
   if (!pl) return "";
-  const chips = RES.map((k) => `<span class="chip">${k[0]} <b>${pl.res[k]||0}</b></span>`).join("");
+  const chips = RES.map((k) => `<span class="chip">${k} <b>${pl.res[k]||0}</b></span>`).join("");
   return `<div class="seat${on ? " on" : ""}"><div class="name"><span class="sw" style="background:${pl.color}"></span>${pl.name}</div><div class="meta">${pl.vp} VP · ${pl.human ? "jij" : "AI"} · ${(pl.dev||[]).length} kaarten</div><div class="chips">${chips}</div></div>`;
 }
 function renderSeats() {
