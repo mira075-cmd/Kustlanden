@@ -108,3 +108,7 @@ button, select { font: inherit; color: inherit; }
 @keyframes flyup { 0%{opacity:0; transform:translateY(12px) scale(.9)} 20%{opacity:1} 100%{opacity:0; transform:translateY(-48px) scale(1.05)} }
 .chip.gain { animation:chipPop .7s ease; box-shadow:0 0 12px #e8c56a; }
 @keyframes chipPop { 50% { transform:scale(1.2); background:#4a3518; } }
+
+#boardStage.mode-2d #board3 { display:none !important; visibility:hidden !important; pointer-events:none !important; width:0 !important; height:0 !important; }
+#boardStage.mode-3d #board { display:none !important; pointer-events:none !important; }
+#boardStage.mode-2d #board { display:block !important; pointer-events:auto !important; }
