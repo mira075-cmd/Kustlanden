@@ -429,11 +429,13 @@ function setupPlaceSettlement(vId) {
   const p = current();
   if (!vertexFree(vId)) return false;
   p.spots.push({ v: vId, city: false });
-  if (G.setupStep >= 4) {
+  if (G.setupStep >= G.players.length) {
     const v = GRAPH.verts.get(vId);
     if (v) v.hexes.forEach((hh) => {
       const h = G.hexes.find((x) => x.q === hh.q && x.r === hh.r);
-      if (h && h.type !== "woestijn") give(p, h.type, 1);
+      if (!h || h.type === "woestijn" || h.type === "zee") return;
+      if (h.type === "goud") grantGold(p, 1);
+      else give(p, h.type, 1);
     });
   }
   G.phase = "setup-road";
@@ -1223,6 +1225,27 @@ function tradePrompt() {
   const from = document.getElementById("fromRes").value;
   const to = document.getElementById("toRes").value;
   if (from !== to) bankTrade(from, to);
+}
+function toggleInfo() {
+  document.getElementById("info").classList.toggle("open");
+}
+function playerTrade() {
+  const p = current();
+  if (!p.human || G.phase !== "main" || !G.rolled) { log("Ruilen na het dobbelen."); return; }
+  const giveK = document.getElementById("pGive").value;
+  const wantK = document.getElementById("pWant").value;
+  const giveN = parseInt(document.getElementById("pGiveN").value, 10);
+  const wantN = parseInt(document.getElementById("pWantN").value, 10);
+  if (giveK === wantK) return;
+  if ((p.res[giveK] || 0) < giveN) { log("Je hebt te weinig " + giveK + "."); return; }
+  const others = G.players.filter((o) => o.id !== p.id && (o.res[wantK] || 0) >= wantN);
+  if (!others.length) { log("Niemand heeft " + wantN + " " + wantK + "."); return; }
+  others.sort((a, b) => (a.res[wantK] - a.res[giveK]) - (b.res[wantK] - b.res[giveK]));
+  const o = others.find((x) => !x.human) || others[0];
+  p.res[giveK] -= giveN; o.res[giveK] = (o.res[giveK] || 0) + giveN;
+  o.res[wantK] -= wantN; p.res[wantK] = (p.res[wantK] || 0) + wantN;
+  log(p.name + " ruilt " + giveN + " " + giveK + " met " + o.name + " voor " + wantN + " " + wantK + ".");
+  renderAll();
 }
 
 window.addEventListener("load", () => {
