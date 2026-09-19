@@ -314,9 +314,35 @@ function countRes(p) {
 }
 
 function rollDice() {
-  if (G.phase !== "main" || G.rolled) return;
-  const a = 1 + Math.floor(Math.random() * 6);
-  const b = 1 + Math.floor(Math.random() * 6);
+  if (G.phase !== "main" || G.rolled || G.rolling) return;
+  const finalA = 1 + Math.floor(Math.random() * 6);
+  const finalB = 1 + Math.floor(Math.random() * 6);
+  const fx = document.getElementById("diceFx");
+  const dA = document.getElementById("dieA");
+  const dB = document.getElementById("dieB");
+  const sum = document.getElementById("diceSum");
+  if (!fx) { applyRoll(finalA, finalB); return; }
+  G.rolling = true;
+  fx.classList.add("show");
+  let n = 0;
+  const tick = setInterval(() => {
+    dA.textContent = 1 + Math.floor(Math.random() * 6);
+    dB.textContent = 1 + Math.floor(Math.random() * 6);
+    if (++n >= 14) {
+      clearInterval(tick);
+      dA.textContent = finalA;
+      dB.textContent = finalB;
+      sum.textContent = finalA + finalB === 7 ? "7 — zwerver" : String(finalA + finalB);
+      setTimeout(() => {
+        fx.classList.remove("show");
+        sum.textContent = "";
+        G.rolling = false;
+        applyRoll(finalA, finalB);
+      }, 550);
+    }
+  }, 55);
+}
+function applyRoll(a, b) {
   G.lastDice = a + b;
   G.rolled = true;
   log("Dobbelsteen: " + G.lastDice);
@@ -520,6 +546,27 @@ function aiTurn() {
   else aiTurnRest();
 }
 
+function vertexOwner(id) {
+  return G.players.find((pl) => pl.spots.some((s) => s.v === id)) || null;
+}
+function roadValue(p, e) {
+  let v = 0;
+  [e.a, e.b].forEach((id) => {
+    const owner = vertexOwner(id);
+    if (owner && owner.id !== p.id) v -= 12;
+    else if (vertexFree(id) && !playerTouchesVertex(p, id)) {
+      const vert = GRAPH.verts.get(id);
+      v += 6 + (vert ? pipValue(vert) : 0);
+    } else if (owner && owner.id === p.id) v += 1;
+  });
+  return v;
+}
+function bestRoad(p) {
+  const opts = [...GRAPH.edges.values()].filter((e) => canBuildRoad(p, e));
+  if (!opts.length) return null;
+  opts.sort((a, b) => roadValue(p, b) - roadValue(p, a));
+  return roadValue(p, opts[0]) > 0 ? opts[0] : null;
+}
 function aiTurnRest() {
   const p = current();
   if (G.phase !== "main") return;
@@ -529,15 +576,21 @@ function aiTurnRest() {
     if (s) buildCity(s.v);
   }
   if (tryPay({ hout: 1, steen: 1, graan: 1, wol: 1 })) {
-    const v = [...GRAPH.verts.values()].find((x) => vertexFree(x.id) && p.roads.some((r) => r.a === x.id || r.b === x.id));
-    if (v) buildSettlement(v.id);
+    const opts = [...GRAPH.verts.values()].filter((x) => canBuildHouse(p, x.id));
+    opts.sort((a, b) => pipValue(b) - pipValue(a));
+    if (opts[0]) buildSettlement(opts[0].id);
   }
   if (tryPay({ hout: 1, steen: 1 })) {
-    const e = [...GRAPH.edges.values()].find((x) => canBuildRoad(p, x));
+    const e = bestRoad(p);
     if (e) buildRoad(e);
   }
+  if (tryPay({ hout: 1, wol: 1 })) {
+    const ships = [...GRAPH.edges.values()].filter((e) => canBuildShip(p, e));
+    ships.sort((a, b) => roadValue(p, b) - roadValue(p, a));
+    if (ships[0] && roadValue(p, ships[0]) > 0) buildShip(ships[0]);
+  }
   if ((p.res.hout || 0) >= 4) bankTrade("hout", "steen");
-  setTimeout(endTurn, 500);
+  setTimeout(endTurn, 700);
 }
 
 let canvas, ctx;
@@ -597,13 +650,7 @@ function draw() {
     const owner = G.players.find((p) => p.spots.some((s) => s.v === v.id));
     if (!owner) return;
     const city = owner.spots.find((s) => s.v === v.id).city;
-    ctx.beginPath();
-    ctx.arc(v.x, v.y + 4, city ? 12 : 9, 0, Math.PI * 2);
-    ctx.fillStyle = owner.color;
-    ctx.fill();
-    const piece = city ? IMGS.stad : IMGS.huis;
-    const s = city ? 28 : 22;
-    if (piece && piece.complete) ctx.drawImage(piece, v.x - s / 2, v.y - s + 4, s, s);
+    drawPiece(v.x, v.y, owner.color, city);
   });
   drawHover();
   ctx.restore();
@@ -705,6 +752,24 @@ function drawHover() {
   }
 }
 
+function drawPiece(x, y, color, city) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = color;
+  ctx.strokeStyle = "#140e0a";
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  if (city) {
+    ctx.moveTo(-11, 8); ctx.lineTo(-11, -2); ctx.lineTo(-4, -2); ctx.lineTo(-4, -10);
+    ctx.lineTo(4, -10); ctx.lineTo(4, -2); ctx.lineTo(11, -2); ctx.lineTo(11, 8);
+  } else {
+    ctx.moveTo(0, -11); ctx.lineTo(9, -2); ctx.lineTo(9, 8); ctx.lineTo(-9, 8); ctx.lineTo(-9, -2);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
 function drawHex(h) {
   const c = hexToPixel(h.q, h.r, SIZE);
   ctx.beginPath();
@@ -715,14 +780,22 @@ function drawHex(h) {
     if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   }
   ctx.closePath();
+  ctx.fillStyle = RES_COLOR[h.type] || "#1d4f6e";
+  ctx.fill();
   ctx.save();
   ctx.clip();
   const tile = IMGS[h.type];
-  if (tile && tile.complete) {
-    ctx.drawImage(tile, c.x - SIZE, c.y - SIZE, SIZE * 2, SIZE * 2);
-  } else {
-    ctx.fillStyle = RES_COLOR[h.type];
-    ctx.fill();
+  if (tile && tile.complete && h.type !== "zee") {
+    ctx.drawImage(tile, c.x - SIZE * 1.05, c.y - SIZE * 1.05, SIZE * 2.1, SIZE * 2.1);
+  }
+  if (h.type === "zee") {
+    ctx.fillStyle = "rgba(255,255,255,.08)";
+    for (let k = -2; k < 3; k++) {
+      ctx.beginPath();
+      ctx.arc(c.x + k * 10, c.y + (k % 2) * 8, 5, 0, Math.PI);
+      ctx.strokeStyle = "rgba(210,230,240,.25)";
+      ctx.stroke();
+    }
   }
   ctx.restore();
   ctx.beginPath();
@@ -746,12 +819,15 @@ function drawHex(h) {
     }
   }
   if (h.number) {
-    ctx.fillStyle = "#f3e6c8";
     ctx.beginPath();
-    ctx.arc(c.x, c.y - 2, 14, 0, Math.PI * 2);
+    ctx.arc(c.x, c.y - 1, 13, 0, Math.PI * 2);
+    ctx.fillStyle = "#efe3c4";
     ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#6b542e";
+    ctx.stroke();
     ctx.fillStyle = (h.number === 6 || h.number === 8) ? "#8b1e1e" : "#1a1410";
-    ctx.font = "bold 14px Georgia";
+    ctx.font = "700 15px Georgia";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(String(h.number), c.x, c.y - 1);
