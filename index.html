@@ -2,12 +2,12 @@
 <html lang="nl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#e0b56a" />
   <title>Kustlanden</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon.svg" />
-  <link rel="stylesheet" href="css/style.css?v=11" />
+  <link rel="stylesheet" href="css/style.css?v=12" />
 </head>
 <body>
   <div id="table">
@@ -24,6 +24,9 @@
         <button class="mini" id="end" onclick="endTurn()">Klaar</button>
         <button class="mini" onclick="toggleTray()">Bouw</button>
         <button class="mini" onclick="toggleInfo()">i</button>
+        <button class="mini" onclick="zoomBoard(1.15)">+</button>
+        <button class="mini" onclick="zoomBoard(1/1.15)">−</button>
+        <button class="mini" onclick="resetView()">⌂</button>
       </div>
     </div>
     <aside id="east" class="rail ew"></aside>
@@ -113,6 +116,6 @@
       <button class="mini primary" onclick="startFromLobby()">Start</button>
     </div>
   </div>
-  <script src="js/game.js?v=11"></script>
+  <script src="js/game.js?v=12"></script>
 </body>
 </html>
