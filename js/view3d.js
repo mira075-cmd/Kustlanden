@@ -1,7 +1,29 @@
 /* 3D board view. Game state stays in game.js */
-const V3 = { ok: false, dirty: true, yaw: 0.35, pitch: 0.95, dist: 620 };
+const V3 = { ok: false, want: (typeof localStorage !== "undefined" && localStorage.getItem("kl_3d") === "0") ? false : true, yaw: 0.35, pitch: 0.95, dist: 620 };
+function setViewMode(on) {
+  V3.want = !!on;
+  try { localStorage.setItem("kl_3d", on ? "1" : "0"); } catch (e) {}
+  const two = document.getElementById("board");
+  const three = document.getElementById("board3");
+  const btn = document.getElementById("viewMode");
+  if (on) {
+    if (typeof THREE !== "undefined") init3();
+    if (three) three.style.display = "block";
+    if (two) two.style.display = "none";
+    if (btn) btn.textContent = "2D";
+  } else {
+    V3.ok = false;
+    if (three) three.style.display = "none";
+    if (two) two.style.display = "block";
+    if (btn) btn.textContent = "3D";
+  }
+  draw();
+}
+function toggleViewMode() { setViewMode(!V3.want); }
 function init3() {
+  if (!V3.want) return;
   if (typeof THREE === "undefined") return;
+  if (V3.r) { V3.ok = true; return; }
   const two = document.getElementById("board");
   const canvas = document.getElementById("board3") || two;
   try {
@@ -65,11 +87,10 @@ function texOf(type) {
 function rebuild3() {
   if (!V3.ok || !G) return;
   while (V3.board.children.length) V3.board.remove(V3.board.children[0]);
-  const shape = hexShape();
   G.hexes.forEach((h) => {
     const deep = h.type === "zee" ? 5 : 11;
-    const geo = new THREE.ExtrudeGeometry(shape, { depth: deep, bevelEnabled: true, bevelThickness: 1.2, bevelSize: 1.1, bevelSegments: 1 });
-    geo.rotateX(-Math.PI / 2);
+    const geo = new THREE.CylinderGeometry(SIZE, SIZE, deep, 6);
+    geo.rotateY(Math.PI / 6);
     const tex = texOf(h.type);
     const col = new THREE.Color(RES_COLOR[h.type] || "#444");
     const mat = new THREE.MeshStandardMaterial({
@@ -80,7 +101,7 @@ function rebuild3() {
     });
     const mesh = new THREE.Mesh(geo, mat);
     const p = hexToPixel(h.q, h.r, SIZE);
-    mesh.position.set(p.x, 0, p.y);
+    mesh.position.set(p.x, deep / 2, p.y);
     mesh.userData = { kind: "hex", q: h.q, r: h.r };
     V3.board.add(mesh);
     if (h.number) {
@@ -116,10 +137,10 @@ function drawBits3() {
       if (!a || !b) return;
       const dx = b.x - a.x, dz = b.y - a.y, len = Math.hypot(dx, dz);
       const bar = new THREE.Mesh(
-        new THREE.BoxGeometry(len, 3, 4.2),
+        new THREE.BoxGeometry(4, 3.2, Math.max(6, len * 0.92)),
         new THREE.MeshStandardMaterial({ color: pl.color })
       );
-      bar.position.set((a.x + b.x) / 2, 13, (a.y + b.y) / 2);
+      bar.position.set((a.x + b.x) / 2, 12.2, (a.y + b.y) / 2);
       bar.rotation.y = Math.atan2(dx, dz);
       V3.bits.add(bar);
     });
@@ -128,10 +149,10 @@ function drawBits3() {
       if (!a || !b) return;
       const dx = b.x - a.x, dz = b.y - a.y, len = Math.hypot(dx, dz);
       const bar = new THREE.Mesh(
-        new THREE.BoxGeometry(len, 2.2, 3.4),
+        new THREE.BoxGeometry(3.2, 2.4, Math.max(6, len * 0.92)),
         new THREE.MeshStandardMaterial({ color: pl.color, metalness: 0.2 })
       );
-      bar.position.set((a.x + b.x) / 2, 12, (a.y + b.y) / 2);
+      bar.position.set((a.x + b.x) / 2, 11.4, (a.y + b.y) / 2);
       bar.rotation.y = Math.atan2(dx, dz);
       V3.bits.add(bar);
     });
