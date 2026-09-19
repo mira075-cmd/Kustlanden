@@ -990,31 +990,35 @@ function hintText() {
   return p.name + ": kies Pad / Huis / Stad of tik een lichtend punt.";
 }
 const RES_DOT = { hout:"#2f6b3a", steen:"#8a5a3b", graan:"#d4b43a", wol:"#7aa86a", erts:"#6b7380" };
+function toggleTray() {
+  document.getElementById("tray").classList.toggle("open");
+}
+function seatHTML(pl, on) {
+  if (!pl) return "";
+  const chips = RES.map((k) => `<span class="chip">${k[0]} <b>${pl.res[k]||0}</b></span>`).join("");
+  return `<div class="seat${on ? " on" : ""}"><div class="name"><span class="sw" style="background:${pl.color}"></span>${pl.name}</div><div class="meta">${pl.vp} VP · ${pl.human ? "jij" : "AI"} · ${(pl.dev||[]).length} kaarten</div><div class="chips">${chips}</div></div>`;
+}
+function renderSeats() {
+  const p = current();
+  const n = G.players.length;
+  const map = n === 2 ? { south:0, north:1 } : n === 3 ? { south:0, west:1, north:2 } : { south:0, west:1, north:2, east:3 };
+  ["north","east","south","west"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const i = map[id];
+    el.innerHTML = i == null ? "" : seatHTML(G.players[i], i === p.id);
+  });
+}
 function renderAll() {
   draw();
-  const me = current();
   const p = current();
-  document.getElementById("res").innerHTML = RES.map((k) =>
-    `<span class="res"><span class="ic" style="background:${RES_DOT[k]}"></span>${k}<b>${me.res[k]}</b></span>`
-  ).join("");
-  document.getElementById("status").textContent = G.winner
-    ? G.winner.name + " wint"
-    : p.name + (G.lastDice ? " · " + G.lastDice : "");
-  document.getElementById("hint").textContent = hintText();
+  const st = document.getElementById("status");
+  const hn = document.getElementById("hint");
+  if (st) st.textContent = G.winner ? G.winner.name + " wint" : p.name + (G.lastDice ? " · " + G.lastDice : "");
+  if (hn) hn.textContent = hintText();
   const dot = document.getElementById("turnDot");
   if (dot) dot.style.background = p.color;
-  const setup = G.phase === "setup" || G.phase === "setup-road";
-  const s1 = document.getElementById("s1");
-  const s2 = document.getElementById("s2");
-  if (s1) {
-    s1.classList.toggle("on", !setup && G.phase === "main" && !G.rolled);
-    s2.classList.toggle("on", setup || G.phase === "robber" || (G.phase === "main" && !!G.rolled));
-    s1.textContent = setup ? "Start" : "1 Dobbel";
-    s2.textContent = G.phase === "setup" ? "Huis" : G.phase === "setup-road" ? "Pad" : G.phase === "robber" ? "Zwerver" : "2 Bouw";
-  }
-  document.getElementById("players").innerHTML = G.players.map((x) =>
-    `<div class="seat${x.id === p.id ? " on" : ""}"><div class="name"><span class="sw" style="background:${x.color}"></span>${x.name}</div><div class="meta">${x.vp} VP · ${x.human ? "jij" : "AI"}</div></div>`
-  ).join("");
+  renderSeats();
   const hand = document.getElementById("hand");
   if (hand) {
     const p = current();
