@@ -7,7 +7,7 @@
   <title>Kustlanden</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon.svg" />
-  <link rel="stylesheet" href="css/style.css?v=20" />
+  <link rel="stylesheet" href="css/style.css?v=21" />
 </head>
 <body>
   <div id="table">
@@ -28,6 +28,7 @@
         <button class="mini" onclick="zoomBoard(1.15)">+</button>
         <button class="mini" onclick="zoomBoard(1/1.15)">−</button>
         <button class="mini" onclick="resetView()">⌂</button>
+        <button class="mini" id="viewMode" onclick="toggleViewMode()">2D</button>
         <button class="mini" id="reshuffle" onclick="reshuffleBoard()">Opnieuw bord</button>
       </div>
     </div>
@@ -120,7 +121,7 @@
     </div>
   </div>
   <script src="https://unpkg.com/three@0.160.1/build/three.min.js"></script>
-  <script src="js/view3d.js?v=20"></script>
-  <script src="js/game.js?v=20"></script>
+  <script src="js/view3d.js?v=21"></script>
+  <script src="js/game.js?v=21"></script>
 </body>
 </html>
