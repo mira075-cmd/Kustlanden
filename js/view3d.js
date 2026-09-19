@@ -89,8 +89,8 @@ function rebuild3() {
   while (V3.board.children.length) V3.board.remove(V3.board.children[0]);
   G.hexes.forEach((h) => {
     const deep = h.type === "zee" ? 5 : 11;
-    const geo = new THREE.CylinderGeometry(SIZE, SIZE, deep, 6);
-    geo.rotateY(Math.PI / 6);
+    const geo = new THREE.CylinderGeometry(SIZE * 1.02, SIZE * 1.02, deep, 6);
+    geo.rotateY(-Math.PI / 6);
     const tex = texOf(h.type);
     const col = new THREE.Color(RES_COLOR[h.type] || "#444");
     const mat = new THREE.MeshStandardMaterial({
