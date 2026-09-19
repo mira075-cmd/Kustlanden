@@ -7,7 +7,7 @@
   <title>Kustlanden</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon.svg" />
-  <link rel="stylesheet" href="css/style.css?v=10" />
+  <link rel="stylesheet" href="css/style.css?v=11" />
 </head>
 <body>
   <div id="table">
@@ -23,6 +23,7 @@
         <button class="mini primary" id="roll" onclick="rollDice()">Dobbel</button>
         <button class="mini" id="end" onclick="endTurn()">Klaar</button>
         <button class="mini" onclick="toggleTray()">Bouw</button>
+        <button class="mini" onclick="toggleInfo()">i</button>
       </div>
     </div>
     <aside id="east" class="rail ew"></aside>
@@ -54,9 +55,39 @@
         <option value="erts">→ erts</option>
       </select>
       <button class="mini" onclick="tradePrompt()">Bank</button>
-      <button class="mini" onclick="showHelp()">?</button>
-      <button class="mini" onclick="restart()">Nieuw</button>
     </div>
+    <div class="row slim">
+      <select id="pGive" class="mini">
+        <option value="hout">geef hout</option>
+        <option value="steen">geef steen</option>
+        <option value="graan">geef graan</option>
+        <option value="wol">geef wol</option>
+        <option value="erts">geef erts</option>
+      </select>
+      <select id="pGiveN" class="mini"><option>1</option><option>2</option><option>3</option></select>
+      <select id="pWant" class="mini">
+        <option value="graan">vraag graan</option>
+        <option value="hout">vraag hout</option>
+        <option value="steen">vraag steen</option>
+        <option value="wol">vraag wol</option>
+        <option value="erts">vraag erts</option>
+      </select>
+      <select id="pWantN" class="mini"><option>1</option><option>2</option><option>3</option></select>
+      <button class="mini primary" onclick="playerTrade()">Ruil</button>
+    </div>
+  </div>
+  <div id="info">
+    <b>Kosten</b>
+    <div>Pad: hout + steen</div>
+    <div>Boot: hout + wol</div>
+    <div>Huis: hout + steen + graan + wol</div>
+    <div>Stad: 2 graan + 3 erts</div>
+    <div>Kaart: wol + graan + erts</div>
+    <b>Bank</b>
+    <div>Standaard 4:1 · haven 3:1 · speciale haven 2:1</div>
+    <b>Start</b>
+    <div>Bij je tweede huis krijg je de grondstoffen van die tegels. Goud = zelf kiezen.</div>
+    <button class="mini" onclick="toggleInfo()">Sluit</button>
   </div>
   <div id="res" hidden></div>
   <div id="players" hidden></div>
@@ -82,6 +113,6 @@
       <button class="mini primary" onclick="startFromLobby()">Start</button>
     </div>
   </div>
-  <script src="js/game.js?v=10"></script>
+  <script src="js/game.js?v=11"></script>
 </body>
 </html>
