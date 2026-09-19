@@ -17,7 +17,7 @@ button, select { font: inherit; color: inherit; }
 #west { grid-area: west; }
 #east { grid-area: east; }
 #boardStage { grid-area: board; position: relative; min-height: 0; }
-#board, #board3 { width:100%; height:100%; display:block; touch-action:manipulation; }
+#board, #board3 { width:100%; height:100%; display:block; touch-action:manipulation; position:absolute; inset:0; }
 .rail {
   background: #1a140f;
   border: 1px solid #3a2f24;
