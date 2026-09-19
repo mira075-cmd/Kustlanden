@@ -976,7 +976,8 @@ function playDev(i) {
 }
 
 function renderLog() {
-  document.getElementById("log").innerHTML = G.log.slice(0, 6).map((l) => `<div>${l}</div>`).join("");
+  const el = document.getElementById("log");
+  if (el) el.innerHTML = G.log.slice(0, 6).map((l) => `<div>${l}</div>`).join("");
 }
 
 function hintText() {
