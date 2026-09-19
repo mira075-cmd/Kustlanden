@@ -1204,6 +1204,8 @@ function renderAll() {
   const dot = document.getElementById("turnDot");
   if (dot) dot.style.background = p.color;
   renderSeats();
+  const rs = document.getElementById("reshuffle");
+  if (rs) rs.style.display = (G.phase === "setup" || G.phase === "setup-road") ? "" : "none";
   const fr = document.getElementById("fromRes");
   if (fr) {
     const p = current();
@@ -1236,8 +1238,17 @@ function restart() {
 function applyGame() {
   G = stateNew(CFG);
   layoutGraph();
+  resetView();
   renderAll();
   scheduleSetup();
+}
+function reshuffleBoard() {
+  if (!G || (G.phase !== "setup" && G.phase !== "setup-road")) {
+    log("Opnieuw bord kan aan het begin van de partij.");
+    return;
+  }
+  applyGame();
+  log("Nieuw bord: andere tegels, cijfers en havens.");
 }
 function syncLobby() {
   const n = parseInt(document.getElementById("cfgCount").value, 10);
