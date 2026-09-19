@@ -619,11 +619,13 @@ function layoutGraph() {
 }
 function vertexCoastal(v) {
   const land = v.hexes.some(isLandHex);
-  const sea = v.hexes.some((ref) => {
+  if (!land) return false;
+  const hasSeaTiles = G.hexes.some((h) => h.type === "zee");
+  if (!hasSeaTiles) return v.hexes.length <= 2;
+  return v.hexes.some((ref) => {
     const h = G.hexes.find((x) => x.q === ref.q && x.r === ref.r);
     return h && h.type === "zee";
   });
-  return land && sea;
 }
 function placeHarbors() {
   const coasts = [...GRAPH.verts.values()].filter(vertexCoastal);
