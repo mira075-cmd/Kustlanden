@@ -77,7 +77,7 @@ let CFG = { map: "kernland", seats: [
 function hexKey(q, r) { return q + "," + r; }
 function hexToPixel(q, r, size) {
   const x = size * Math.sqrt(3) * (q + r / 2);
-  const y = size * (3 / 2) * r;
+  const y = size * (3 / 2) * r * 0.82;
   return { x, y };
 }
 function cubeRound(q, r) {
@@ -725,7 +725,7 @@ function draw() {
   ctx.translate(W / 2, H / 2 + 8);
   ctx.translate(VIEW.x, VIEW.y);
   ctx.scale(VIEW.s, VIEW.s);
-  G.hexes.forEach((h) => drawHex(h));
+  G.hexes.slice().sort((a,b) => hexToPixel(a.q,a.r,SIZE).y - hexToPixel(b.q,b.r,SIZE).y).forEach((h) => { drawHexSide(h); drawHex(h); });
   drawGuides();
   GRAPH.edges.forEach((e) => {
     const owner = G.players.find((p) => p.roads.some((r) => r.id === e.id));
@@ -859,6 +859,8 @@ function drawHover() {
 function drawPiece(x, y, color, city) {
   ctx.save();
   ctx.translate(x, y);
+  ctx.fillStyle = "rgba(0,0,0,.3)";
+  ctx.beginPath(); ctx.ellipse(0, 10, city ? 12 : 9, 4, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = color;
   ctx.strokeStyle = "#140e0a";
   ctx.lineWidth = 1.6;
@@ -914,15 +916,37 @@ function drawHarbors() {
     ctx.fillText(h.kind === "any" ? "3:1" : "2", p.x, p.y - 1);
   });
 }
-function drawHex(h) {
-  const c = hexToPixel(h.q, h.r, SIZE);
-  ctx.beginPath();
+function hexPts(c) {
+  const pts = [];
   for (let i = 0; i < 6; i++) {
     const a = (Math.PI / 180) * (60 * i - 30);
-    const x = c.x + SIZE * Math.cos(a);
-    const y = c.y + SIZE * Math.sin(a);
-    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    pts.push({ x: c.x + SIZE * Math.cos(a), y: c.y + SIZE * Math.sin(a) });
   }
+  return pts;
+}
+function drawHexSide(h) {
+  const c = hexToPixel(h.q, h.r, SIZE);
+  const pts = hexPts(c);
+  const d = Math.max(5, SIZE * 0.16);
+  const col = RES_COLOR[h.type] || "#1d4f6e";
+  ctx.fillStyle = col;
+  // darken by overlay
+  ctx.fillStyle = "rgba(20,12,6,.55)";
+  for (let i = 0; i < 6; i++) {
+    const a = pts[i], b = pts[(i + 1) % 6];
+    if (a.y + b.y < 2 * c.y) continue;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+    ctx.lineTo(b.x, b.y + d); ctx.lineTo(a.x, a.y + d);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+function drawHex(h) {
+  const c = hexToPixel(h.q, h.r, SIZE);
+  const pts = hexPts(c);
+  ctx.beginPath();
+  pts.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
   ctx.closePath();
   ctx.fillStyle = RES_COLOR[h.type] || "#1d4f6e";
   ctx.fill();
@@ -972,7 +996,11 @@ function drawHex(h) {
   }
   if (h.number) {
     ctx.beginPath();
-    ctx.arc(c.x, c.y - 1, 13, 0, Math.PI * 2);
+    ctx.ellipse(c.x, c.y + 8, 11, 4, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(0,0,0,.28)";
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(c.x, c.y - 3, 13, 0, Math.PI * 2);
     ctx.fillStyle = "#efe3c4";
     ctx.fill();
     ctx.lineWidth = 2;
@@ -982,7 +1010,7 @@ function drawHex(h) {
     ctx.font = "700 15px Georgia";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(String(h.number), c.x, c.y - 1);
+    ctx.fillText(String(h.number), c.x, c.y - 3);
   }
 }
 
