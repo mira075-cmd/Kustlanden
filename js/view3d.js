@@ -2,10 +2,17 @@
 const V3 = { ok: false, dirty: true, yaw: 0.35, pitch: 0.95, dist: 620 };
 function init3() {
   if (typeof THREE === "undefined") return;
-  const canvas = document.getElementById("board");
+  const two = document.getElementById("board");
+  const canvas = document.getElementById("board3") || two;
+  try {
   V3.r = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+  } catch (err) { console.warn("webgl", err); return; }
+  canvas.style.display = "block";
+  if (two && two !== canvas) two.style.display = "none";
   V3.r.setPixelRatio(Math.min(devicePixelRatio, 2));
-  V3.r.setSize(canvas.clientWidth || 720, canvas.clientHeight || 720, false);
+  const w = (two && two.clientWidth) || canvas.clientWidth || 720;
+  const h = (two && two.clientHeight) || canvas.clientHeight || 720;
+  V3.r.setSize(w, h, false);
   V3.r.setClearColor(0x1a140f, 1);
   V3.s = new THREE.Scene();
   V3.c = new THREE.PerspectiveCamera(42, 1, 8, 4000);
@@ -149,6 +156,25 @@ function drawBits3() {
     m.userData = { kind: "vert", id: v.id };
     V3.bits.add(m);
   });
+  if (G && current && current().human && (G.phase === "setup" || G.phase === "setup-road" || (G.phase === "main" && G.rolled))) {
+    const p = current();
+    const seen = new Set();
+    GRAPH.verts.forEach((v) => {
+      const key = Math.round(v.x) + "," + Math.round(v.y);
+      if (seen.has(key)) return;
+      if (!(G.phase === "setup" || canBuildHouse(p, v.id) || canBuildCity(p, v.id))) return;
+      if (G.phase === "setup" && !vertexFree(v.id)) return;
+      if (G.phase === "setup-road") return;
+      seen.add(key);
+      const m = new THREE.Mesh(
+        new THREE.SphereGeometry(4.2, 10, 8),
+        new THREE.MeshStandardMaterial({ color: 0xffe08a, emissive: 0x664400 })
+      );
+      m.position.set(v.x, 16, v.y);
+      m.userData = { kind: "vert", id: v.id };
+      V3.bits.add(m);
+    });
+  }
   if (G.robber) {
     const p = hexToPixel(G.robber.q, G.robber.r, SIZE);
     const m = new THREE.Mesh(
