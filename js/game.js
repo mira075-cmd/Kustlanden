@@ -397,10 +397,10 @@ function rollDice() {
 }
 
 function tickFx() {
-  if (!G.fx) return;
-  draw();
+  if (!G || !G.fx) return;
+  try { draw(); } catch (e) { G.fx = null; return; }
   if (Date.now() < G.fx.until) requestAnimationFrame(tickFx);
-  else { G.fx = null; renderSeats(); draw(); }
+  else { G.fx = null; try { renderSeats(); draw(); } catch (e) {} }
 }
 function showGains(fx) {
   const host = document.getElementById("gainFx");
@@ -759,12 +759,14 @@ function draw() {
   ctx.translate(W / 2, H / 2 + 8);
   ctx.translate(VIEW.x, VIEW.y);
   ctx.scale(VIEW.s, VIEW.s);
+  if (!GRAPH) { ctx.restore(); return; }
   G.hexes.slice().sort((a,b) => hexToPixel(a.q,a.r,SIZE).y - hexToPixel(b.q,b.r,SIZE).y).forEach((h) => { drawHexSide(h); drawHex(h); });
   drawGuides();
   GRAPH.edges.forEach((e) => {
     const owner = G.players.find((p) => p.roads.some((r) => r.id === e.id));
     if (!owner) return;
     const a = GRAPH.verts.get(e.a), b = GRAPH.verts.get(e.b);
+    if (!a || !b) return;
     ctx.strokeStyle = owner.color;
     ctx.lineWidth = 6;
     ctx.beginPath();
@@ -1075,7 +1077,7 @@ function zoomBoard(factor, cx, cy) {
   VIEW.s = ns;
   draw();
 }
-function resetView() { VIEW = { s: 1, x: 0, y: 0 }; draw(); }
+function resetView() { VIEW = { s: 1, x: 0, y: 0 }; if (G && G.hexes) draw(); }
 function bindBoardZoom() {
   canvas.addEventListener("wheel", (e) => {
     e.preventDefault();
