@@ -7,7 +7,7 @@
   <title>Kustlanden</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon.svg" />
-  <link rel="stylesheet" href="css/style.css?v=2" />
+  <link rel="stylesheet" href="css/style.css?v=3" />
 </head>
 <body>
   <div id="app">
@@ -71,7 +71,9 @@
       <div id="log"></div>
     </div>
   </div>
-  <div id="modal" onclick="if(event.target.id==='modal')hideHelp()">
+  
+<div id="diceFx"><div class="die" id="dieA">?</div><div class="die" id="dieB">?</div><div id="diceSum"></div></div>
+<div id="modal" onclick="if(event.target.id==='modal')hideHelp()">
     <div class="box">
       <h2>Kustlanden</h2>
       <p>Eigen hex-spel. Geen officiële editie of kunst van een ander merk.</p>
@@ -96,6 +98,6 @@
     <button class="pill primary" onclick="startFromLobby()">Start</button>
   </div>
 </div>
-<script src="js/game.js?v=2"></script>
+<script src="js/game.js?v=3"></script>
 </body>
 </html>
