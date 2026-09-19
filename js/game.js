@@ -1385,10 +1385,13 @@ window.addEventListener("load", () => {
   bindBoard(canvas);
   bindBoardZoom();
   setMode("auto");
+  if (typeof setViewMode === "function") setViewMode(!!(V3 && V3.want));
+  else document.getElementById("boardStage").classList.add("mode-2d");
   loadImages(() => {
-    if (typeof init3 === "function") init3();
-    const live = (V3 && V3.ok && V3.r) ? V3.r.domElement : canvas;
-    bindBoard(live);
+    if (V3 && V3.want && typeof init3 === "function") init3();
+    bindBoard(document.getElementById("board"));
+    const b3 = document.getElementById("board3");
+    if (b3) bindBoard(b3);
     if (G) renderAll();
   });
   syncLobby();
