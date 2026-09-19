@@ -470,10 +470,14 @@ function buildShip(e) {
 
 function bankTrade(from, to) {
   const p = current();
-  if ((p.res[from] || 0) < 4) return;
-  p.res[from] -= 4;
+  const rate = playerRate(p, from);
+  if ((p.res[from] || 0) < rate) {
+    log("Te weinig " + from + " (haven " + rate + ":1).");
+    return;
+  }
+  p.res[from] -= rate;
   p.res[to] += 1;
-  log(p.name + " wisselt 4 " + from + " voor 1 " + to + ".");
+  log(p.name + " wisselt " + rate + " " + from + " voor 1 " + to + ".");
   renderAll();
 }
 
@@ -611,6 +615,39 @@ function loadImages(done) {
 }
 function layoutGraph() {
   GRAPH = buildGraph(G.hexes, SIZE);
+  if (G && !G.harbors) G.harbors = placeHarbors();
+}
+function vertexCoastal(v) {
+  const land = v.hexes.some(isLandHex);
+  const sea = v.hexes.some((ref) => {
+    const h = G.hexes.find((x) => x.q === ref.q && x.r === ref.r);
+    return h && h.type === "zee";
+  });
+  return land && sea;
+}
+function placeHarbors() {
+  const coasts = [...GRAPH.verts.values()].filter(vertexCoastal);
+  coasts.sort((a, b) => a.x - b.x || a.y - b.y);
+  const picked = [];
+  coasts.forEach((v) => {
+    if (picked.some((p) => Math.hypot(p.x - v.x, p.y - v.y) < SIZE * 1.7)) return;
+    picked.push(v);
+  });
+  const types = shuffle(["any","any","any","any","hout","steen","graan","wol","erts"]);
+  return picked.slice(0, types.length).map((v, i) => ({
+    v: v.id,
+    kind: types[i],
+    rate: types[i] === "any" ? 3 : 2,
+  }));
+}
+function playerRate(p, res) {
+  let rate = 4;
+  (G.harbors || []).forEach((h) => {
+    if (!p.spots.some((s) => s.v === h.v)) return;
+    if (h.kind === "any") rate = Math.min(rate, 3);
+    if (h.kind === res) rate = Math.min(rate, 2);
+  });
+  return rate;
 }
 
 function draw() {
@@ -768,6 +805,25 @@ function drawPiece(x, y, color, city) {
   ctx.fill();
   ctx.stroke();
   ctx.restore();
+}
+
+function drawHarbors() {
+  (G.harbors || []).forEach((h) => {
+    const v = GRAPH.verts.get(h.v);
+    if (!v) return;
+    ctx.beginPath();
+    ctx.arc(v.x, v.y, 11, 0, Math.PI * 2);
+    ctx.fillStyle = "#d8c49a";
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#5a4320";
+    ctx.stroke();
+    ctx.fillStyle = h.kind === "any" ? "#1a1410" : (RES_COLOR[h.kind] || "#1a1410");
+    ctx.font = "700 9px Segoe UI";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(h.kind === "any" ? "3:1" : "2:1", v.x, v.y);
+  });
 }
 function drawHex(h) {
   const c = hexToPixel(h.q, h.r, SIZE);
@@ -1019,6 +1075,11 @@ function renderAll() {
   const dot = document.getElementById("turnDot");
   if (dot) dot.style.background = p.color;
   renderSeats();
+  const fr = document.getElementById("fromRes");
+  if (fr) {
+    const p = current();
+    fr.innerHTML = RES.map((k) => `<option value="${k}">${playerRate(p,k)} ${k}</option>`).join("");
+  }
   const hand = document.getElementById("hand");
   if (hand) {
     const p = current();
