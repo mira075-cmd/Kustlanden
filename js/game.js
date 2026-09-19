@@ -326,10 +326,12 @@ function pay(p, cost) {
 function give(p, type, n) { p.res[type] = (p.res[type] || 0) + n; }
 
 function produce(roll) {
+  G.fx = { roll, until: Date.now() + 2400, hexes: [], gains: [] };
   G.hexes.forEach((h) => {
     if (h.number !== roll) return;
     if (G.robber.q === h.q && G.robber.r === h.r) return;
     if (h.type === "woestijn" || h.type === "zee") return;
+    G.fx.hexes.push(h.q + "," + h.r);
     G.players.forEach((p) => {
       let n = 0;
       p.spots.forEach((s) => {
@@ -340,8 +342,11 @@ function produce(roll) {
       if (!n) return;
       if (h.type === "goud") grantGold(p, n);
       else give(p, h.type, n);
+      G.fx.gains.push({ pid: p.id, name: p.name, res: h.type === "goud" ? "goud" : h.type, n });
     });
   });
+  showGains(G.fx);
+  tickFx();
 }
 
 
@@ -389,6 +394,29 @@ function rollDice() {
       }, 400);
     }
   }, 60);
+}
+
+function tickFx() {
+  if (!G.fx) return;
+  draw();
+  if (Date.now() < G.fx.until) requestAnimationFrame(tickFx);
+  else { G.fx = null; renderSeats(); draw(); }
+}
+function showGains(fx) {
+  const host = document.getElementById("gainFx");
+  if (!host) return;
+  host.innerHTML = "";
+  if (!fx.gains.length) {
+    host.innerHTML = "<div class=\"gainline\">Niemand krijgt iets.</div>";
+    return;
+  }
+  fx.gains.forEach((g, i) => {
+    const d = document.createElement("div");
+    d.className = "fly";
+    d.style.animationDelay = (i * 0.12) + "s";
+    d.textContent = g.name + " +" + g.n + " " + g.res;
+    host.appendChild(d);
+  });
 }
 function applyRoll(a, b) {
   G.lastDice = a + b;
@@ -969,6 +997,11 @@ function drawHex(h) {
       ctx.stroke();
     }
   }
+  if (G.fx && G.fx.hexes.includes(h.q + "," + h.r) && Date.now() < G.fx.until) {
+    const a = 0.22 + 0.28 * (0.5 + 0.5 * Math.sin(Date.now() / 110));
+    ctx.fillStyle = "rgba(255,220,90," + a + ")";
+    ctx.fill();
+  }
   ctx.restore();
   ctx.beginPath();
   for (let i = 0; i < 6; i++) {
@@ -1224,7 +1257,10 @@ function toggleTray() {
 }
 function seatHTML(pl, on) {
   if (!pl) return "";
-  const chips = RES.map((k) => `<span class="chip">${k} <b>${pl.res[k]||0}</b></span>`).join("");
+  const chips = RES.map((k) => {
+    const hot = G.fx && Date.now() < G.fx.until && G.fx.gains.some((g) => g.pid === pl.id && g.res === k);
+    return `<span class="chip${hot ? " gain" : ""}">${k} <b>${pl.res[k]||0}</b></span>`;
+  }).join("");
   return `<div class="seat${on ? " on" : ""}"><div class="name"><span class="sw" style="background:${pl.color}"></span>${pl.name}</div><div class="meta">${pl.vp} VP · ${pl.human ? "jij" : "AI"} · ${(pl.dev||[]).length} kaarten</div><div class="chips">${chips}</div></div>`;
 }
 function renderSeats() {
