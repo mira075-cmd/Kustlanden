@@ -7,7 +7,7 @@
   <title>Kustlanden</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icon.svg" />
-  <link rel="stylesheet" href="css/style.css?v=14" />
+  <link rel="stylesheet" href="css/style.css?v=15" />
 </head>
 <body>
   <div id="table">
@@ -27,6 +27,7 @@
         <button class="mini" onclick="zoomBoard(1.15)">+</button>
         <button class="mini" onclick="zoomBoard(1/1.15)">−</button>
         <button class="mini" onclick="resetView()">⌂</button>
+        <button class="mini" id="reshuffle" onclick="reshuffleBoard()">Opnieuw bord</button>
       </div>
     </div>
     <aside id="east" class="rail ew"></aside>
@@ -114,8 +115,9 @@
       <div id="cfgSeats"></div>
       <div class="maps" id="cfgMaps"></div>
       <button class="mini primary" onclick="startFromLobby()">Start</button>
+      <button class="mini" onclick="startFromLobby()">Ander bord</button>
     </div>
   </div>
-  <script src="js/game.js?v=14"></script>
+  <script src="js/game.js?v=15"></script>
 </body>
 </html>
