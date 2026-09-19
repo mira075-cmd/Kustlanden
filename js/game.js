@@ -44,7 +44,7 @@ function around(cells) {
   return extra;
 }
 const MAPS = {
-  kernland: { title: "Kernland", blurb: "Klassiek binnenland, 19 tegels.", land: CORE19, zee: [] },
+  kernland: { title: "Kernland", blurb: "Klassiek eiland met zee en havens.", land: CORE19, zee: [] },
   ringzee: { title: "Ringzee", blurb: "Eiland met zee eromheen.", land: CORE19, zee: around(CORE19) },
   tweestroom: {
     title: "Twee kusten",
@@ -58,7 +58,7 @@ const MAPS = {
     land: [[-3,0],[-2,0],[-1,0],[0,0],[1,0],[2,0],[3,0],[-2,-1],[0,-1],[2,-1],[-1,1],[1,1]],
     zee: around([[-3,0],[-2,0],[-1,0],[0,0],[1,0],[2,0],[3,0],[-2,-1],[0,-1],[2,-1],[-1,1],[1,1]])
   },
-  grootland: { title: "Grootland", blurb: "Groot binnenland, 37 tegels.", land: hexDisk(3), zee: [] },
+  grootland: { title: "Grootland", blurb: "Groot eiland met zee en havens.", land: hexDisk(3), zee: [] },
   grooteiland: { title: "Groot eiland", blurb: "Groot eiland met zee-ring.", land: hexDisk(3), zee: around(hexDisk(3)) },
   archipel: {
     title: "Archipel",
@@ -159,7 +159,14 @@ function newBoard(mapId) {
     const number = type === "woestijn" ? 0 : nums[ni++];
     return { q, r, type, number };
   });
-  map.zee.forEach(([q,r]) => hexes.push({ q, r, type: "zee", number: 0 }));
+  const landSet = new Set(map.land.map(([q, r]) => q + "," + r));
+  const seaSet = new Set();
+  around(map.land).concat(map.zee || []).forEach(([q, r]) => {
+    const k = q + "," + r;
+    if (landSet.has(k) || seaSet.has(k)) return;
+    seaSet.add(k);
+    hexes.push({ q, r, type: "zee", number: 0 });
+  });
   const goldN = landN >= 30 ? 3 : landN >= 18 ? 2 : 1;
   hexes.filter((h) => h.type !== "woestijn" && h.type !== "zee").slice(0, goldN).forEach((h) => { h.type = "goud"; });
   return hexes;
